@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { MapPin, Bed, Bath, Square, ArrowRight } from 'lucide-react'
+import { MapPin, Bed, Bath, Square, ArrowRight, Calendar } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import api from '@/lib/api'
+import { ScheduleViewingModal } from '@/components/ui/schedule-viewing-modal'
 
 export default function FeaturedListings() {
   const [properties, setProperties] = useState([])
@@ -116,15 +117,29 @@ export default function FeaturedListings() {
                       <span>{property.area?.toLocaleString()} sqft</span>
                     </div>
                   </div>
-                  <Link to={`/listings/${property._id || property.id}`}>
-                    <Button
-                      variant="outline"
-                      className="w-full group-hover:bg-accent group-hover:text-accent-foreground transition-colors"
+                  <div className="space-y-2">
+                    <Link to={`/listings/${property._id || property.id}`}>
+                      <Button
+                        variant="outline"
+                        className="w-full group-hover:bg-accent group-hover:text-accent-foreground transition-colors"
+                      >
+                        View Details
+                        <ArrowRight className="h-4 w-4 ml-2" />
+                      </Button>
+                    </Link>
+                    <ScheduleViewingModal
+                      propertyId={property._id || property.id}
+                      propertyTitle={property.title}
                     >
-                      View Details
-                      <ArrowRight className="h-4 w-4 ml-2" />
-                    </Button>
-                  </Link>
+                      <Button
+                        variant="secondary"
+                        className="w-full group-hover:bg-accent group-hover:text-accent-foreground transition-colors"
+                      >
+                        <Calendar className="h-4 w-4 mr-2" />
+                        Schedule Viewing
+                      </Button>
+                    </ScheduleViewingModal>
+                  </div>
                 </CardContent>
               </Card>
             ))}

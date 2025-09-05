@@ -26,6 +26,7 @@ import { Slider } from '@/components/ui/slider'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Link } from 'react-router-dom'
 import api from '@/lib/api'
+import { ScheduleViewingModal } from '@/components/ui/schedule-viewing-modal'
 
 export default function Listings() {
   const [properties, setProperties] = useState<any[]>([])
@@ -346,9 +347,19 @@ export default function Listings() {
                       </span>
                     </div>
                   </div>
-                  <Link to={`/listings/${property._id || property.id}`}>
-                    <Button className="w-full">View Details</Button>
-                  </Link>
+                  <div className="space-y-2">
+                    <Link to={`/listings/${property._id || property.id}`}>
+                      <Button className="w-full">View Details</Button>
+                    </Link>
+                    <ScheduleViewingModal
+                      propertyId={property._id || property.id}
+                      propertyTitle={property.title}
+                    >
+                      <Button variant="outline" className="w-full">
+                        Schedule Viewing
+                      </Button>
+                    </ScheduleViewingModal>
+                  </div>
                 </CardContent>
               </Card>
             ))}

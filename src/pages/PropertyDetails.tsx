@@ -4,8 +4,9 @@ import Layout from '@/components/layout/Layout'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { MapPin, Bed, Bath, Square, ArrowLeft } from 'lucide-react'
+import { MapPin, Bed, Bath, Square, ArrowLeft, Calendar } from 'lucide-react'
 import api from '@/lib/api'
+import { ScheduleViewingModal } from '@/components/ui/schedule-viewing-modal'
 
 type Property = {
   _id?: string
@@ -146,6 +147,16 @@ export default function PropertyDetails() {
                   <div className="font-heading font-bold text-3xl text-accent">
                     {formatPrice(property.price)}
                   </div>
+
+                  <ScheduleViewingModal
+                    propertyId={property._id || property.id || ''}
+                    propertyTitle={property.title}
+                  >
+                    <Button className="w-full mb-4">
+                      <Calendar className="h-4 w-4 mr-2" />
+                      Schedule a Viewing
+                    </Button>
+                  </ScheduleViewingModal>
 
                   <div className="grid grid-cols-3 gap-3 text-sm text-muted-foreground">
                     <div className="flex items-center">

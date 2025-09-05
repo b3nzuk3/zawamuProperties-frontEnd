@@ -11,6 +11,7 @@ import {
   Plus,
   X,
   Trash2,
+  Calendar,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -742,6 +743,20 @@ export default function Admin() {
                       <h3 className="font-medium text-foreground">Analytics</h3>
                       <p className="text-sm text-muted-foreground">
                         View site performance and user metrics
+                      </p>
+                    </div>
+                  </div>
+                </Link>
+
+                <Link to="/admin/viewing-requests" className="block">
+                  <div className="flex items-center space-x-3 p-4 rounded-lg border border-border hover:bg-secondary/50 transition-colors">
+                    <Calendar className="h-8 w-8 text-accent" />
+                    <div>
+                      <h3 className="font-medium text-foreground">
+                        Viewing Requests
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        Manage property viewing appointments
                       </p>
                     </div>
                   </div>

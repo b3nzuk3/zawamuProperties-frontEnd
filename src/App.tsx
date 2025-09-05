@@ -20,6 +20,7 @@ import TestMDXEditor from './TestMDXEditor'
 import AdminBlog from './pages/AdminBlog'
 import AdminSettings from './pages/AdminSettings'
 import AdminAnalytics from './pages/AdminAnalytics'
+import AdminViewingRequests from './pages/AdminViewingRequests'
 
 const queryClient = new QueryClient()
 
@@ -84,6 +85,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <AdminAnalytics />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/viewing-requests"
+              element={
+                <ProtectedRoute>
+                  <AdminViewingRequests />
                 </ProtectedRoute>
               }
             />
