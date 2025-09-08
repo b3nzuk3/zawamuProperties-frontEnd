@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { MapPin, Bed, Bath, Square, ArrowLeft, Calendar } from 'lucide-react'
 import api from '@/lib/api'
 import { ScheduleViewingModal } from '@/components/ui/schedule-viewing-modal'
+import { DualCurrencyPrice } from '@/components/ui/dual-currency-price'
 
 type Property = {
   _id?: string
@@ -51,14 +52,6 @@ export default function PropertyDetails() {
       return '/placeholder.jpg'
     return property.images[0]
   }, [property])
-
-  const formatPrice = (price: number) =>
-    new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(price)
 
   if (loading)
     return (
@@ -144,9 +137,12 @@ export default function PropertyDetails() {
                     )}
                   </div>
 
-                  <div className="font-heading font-bold text-3xl text-accent">
-                    {formatPrice(property.price)}
-                  </div>
+                  <DualCurrencyPrice
+                    price={property.price}
+                    originalCurrency="KES"
+                    showRefresh={true}
+                    className="mb-4"
+                  />
 
                   <ScheduleViewingModal
                     propertyId={property._id || property.id || ''}

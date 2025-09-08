@@ -22,6 +22,7 @@ import AdminSettings from './pages/AdminSettings'
 import AdminAnalytics from './pages/AdminAnalytics'
 import AdminViewingRequests from './pages/AdminViewingRequests'
 import UserDashboard from './pages/UserDashboard'
+import CurrencyConverter from './pages/CurrencyConverter'
 
 const queryClient = new QueryClient()
 
@@ -49,6 +50,7 @@ const App = () => (
             <Route path="/contact" element={<Contact />} />
             <Route path="/login" element={<Login />} />
             <Route path="/dashboard" element={<UserDashboard />} />
+            <Route path="/currency-converter" element={<CurrencyConverter />} />
             <Route path="/test-mdx" element={<TestMDXEditor />} />
             <Route
               path="/admin"

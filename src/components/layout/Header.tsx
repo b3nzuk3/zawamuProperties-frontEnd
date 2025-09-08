@@ -10,6 +10,7 @@ import {
   User,
   Building2,
   Bell,
+  Calculator,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -20,6 +21,7 @@ const navigation = [
   { name: 'Blog', href: '/blog', icon: BookOpen },
   { name: 'About', href: '/about', icon: User },
   { name: 'Contact', href: '/contact', icon: Phone },
+  { name: 'Currency Converter', href: '/currency-converter', icon: Calculator },
   { name: 'My Dashboard', href: '/dashboard', icon: Bell },
 ]
 

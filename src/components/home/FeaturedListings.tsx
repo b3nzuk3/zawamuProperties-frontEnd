@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import api from '@/lib/api'
 import { ScheduleViewingModal } from '@/components/ui/schedule-viewing-modal'
+import { DualCurrencyPrice } from '@/components/ui/dual-currency-price'
 
 export default function FeaturedListings() {
   const [properties, setProperties] = useState([])
@@ -25,15 +26,6 @@ export default function FeaturedListings() {
     }
     fetchProperties()
   }, [])
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(price)
-  }
 
   return (
     <section className="py-16 lg:py-24">
@@ -99,9 +91,11 @@ export default function FeaturedListings() {
                       <MapPin className="h-4 w-4 mr-1" />
                       <span className="text-sm">{property.location}</span>
                     </div>
-                    <div className="font-heading font-bold text-2xl text-accent">
-                      {formatPrice(property.price)}
-                    </div>
+                    <DualCurrencyPrice
+                      price={property.price}
+                      originalCurrency="KES"
+                      className="mb-2"
+                    />
                   </div>
                   <div className="flex items-center justify-between text-sm text-muted-foreground mb-6">
                     <div className="flex items-center">

@@ -29,6 +29,7 @@ import api from '@/lib/api'
 import { ScheduleViewingModal } from '@/components/ui/schedule-viewing-modal'
 import { LocationSelector } from '@/components/ui/location-selector'
 import { SaveSearchModal } from '@/components/ui/save-search-modal'
+import { DualCurrencyPrice } from '@/components/ui/dual-currency-price'
 
 export default function Listings() {
   const [properties, setProperties] = useState<any[]>([])
@@ -56,13 +57,12 @@ export default function Listings() {
       .finally(() => setLoading(false))
   }, [])
 
+  // Simple price formatter for price range display
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return `KSh ${price.toLocaleString('en-US', {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
-    }).format(price)
+    })}`
   }
 
   // Filter properties based on search criteria
@@ -469,9 +469,11 @@ export default function Listings() {
                             : property.location}
                         </span>
                       </div>
-                      <div className="font-heading font-bold text-2xl text-accent">
-                        {formatPrice(property.price)}
-                      </div>
+                      <DualCurrencyPrice
+                        price={property.price}
+                        originalCurrency="KES"
+                        className="mb-2"
+                      />
                     </div>
                     <div className="flex items-center justify-between text-sm text-muted-foreground mb-6">
                       <div className="flex items-center">
