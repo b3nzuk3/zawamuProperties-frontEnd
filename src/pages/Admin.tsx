@@ -12,11 +12,13 @@ import {
   X,
   Trash2,
   Calendar,
+  Bell,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { LocationSelector } from '@/components/ui/location-selector'
 import api from '@/lib/api'
 import MdEditor from 'react-markdown-editor-lite'
 import MarkdownIt from 'markdown-it'
@@ -47,12 +49,17 @@ export default function Admin() {
     }[]
   >([])
   const [loadingDash, setLoadingDash] = useState(true)
+  const [checkingAlerts, setCheckingAlerts] = useState(false)
   const [dashError, setDashError] = useState<string | null>(null)
   const [form, setForm] = useState({
     title: '',
     description: '',
     price: '',
     location: '',
+    county: '',
+    constituency: '',
+    ward: '',
+    coordinates: null as [number, number] | null,
     type: 'House',
     bedrooms: '',
     bathrooms: '',
@@ -85,6 +92,22 @@ export default function Admin() {
   const handleInput = (e: any) => {
     const { name, value, type, checked } = e.target
     setForm((f) => ({ ...f, [name]: type === 'checkbox' ? checked : value }))
+  }
+
+  const handleLocationChange = (location: {
+    county: string
+    constituency: string
+    ward: string
+    coordinates?: [number, number]
+  }) => {
+    setForm((f) => ({
+      ...f,
+      county: location.county,
+      constituency: location.constituency,
+      ward: location.ward,
+      coordinates: location.coordinates || null,
+      location: `${location.ward}, ${location.constituency}, ${location.county}`, // Keep backward compatibility
+    }))
   }
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -137,15 +160,65 @@ export default function Admin() {
         bathrooms: form.bathrooms ? Number(form.bathrooms) : 0,
         area: form.area ? Number(form.area) : 0,
         images: imageUrls,
+        // Include structured location data
+        county: form.county,
+        constituency: form.constituency,
+        ward: form.ward,
+        coordinates: form.coordinates,
       })
 
       setSuccess('Property added successfully!')
       setShowAddModal(false)
+      // Reset form
+      setForm({
+        title: '',
+        description: '',
+        price: '',
+        location: '',
+        county: '',
+        constituency: '',
+        ward: '',
+        coordinates: null,
+        type: 'House',
+        bedrooms: '',
+        bathrooms: '',
+        area: '',
+        featured: false,
+        images: [],
+        features: [],
+      })
+      setSelectedFiles([])
+      setPreviews([])
       // Optionally, refresh property list here
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to add property')
     } finally {
       setUploading(false)
+    }
+  }
+
+  const handleCheckAlerts = async () => {
+    setCheckingAlerts(true)
+    try {
+      const response = await api.get(
+        '/saved-searches/admin/check-matches?hoursBack=24'
+      )
+      const { data } = response.data
+
+      if (data.totalMatches > 0) {
+        alert(
+          `Found ${data.totalMatches} matches and sent ${
+            data.emailResults.filter((r: any) => r.success).length
+          } email alerts!`
+        )
+      } else {
+        alert('No new property matches found for saved searches.')
+      }
+    } catch (error) {
+      console.error('Error checking alerts:', error)
+      alert('Error checking property alerts. Please try again.')
+    } finally {
+      setCheckingAlerts(false)
     }
   }
 
@@ -290,217 +363,229 @@ export default function Admin() {
 
           {/* Add Property Modal */}
           {showAddModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-              <div className="bg-white rounded-xl shadow-card p-8 w-full max-w-lg relative">
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+              <form
+                onSubmit={handleSubmit}
+                className="bg-white rounded-xl shadow-card w-full max-w-2xl max-h-[90vh] relative flex flex-col"
+              >
                 <button
-                  className="absolute top-4 right-4"
+                  type="button"
+                  className="absolute top-4 right-4 z-10"
                   onClick={() => setShowAddModal(false)}
                 >
                   <X />
                 </button>
-                <h2 className="font-heading text-xl font-bold mb-4">
-                  Add Property
-                </h2>
-                {error && <div className="text-red-500 mb-2">{error}</div>}
-                {success && (
-                  <div className="text-green-600 mb-2">{success}</div>
-                )}
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Title
-                    </label>
-                    <Input
-                      name="title"
-                      value={form.title}
-                      onChange={handleInput}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Description
-                    </label>
-                    <Textarea
-                      name="description"
-                      value={form.description}
-                      onChange={handleInput}
-                      required
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <div className="flex-1">
-                      <label className="block text-sm font-medium mb-1">
-                        Price
-                      </label>
-                      <Input
-                        name="price"
-                        type="number"
-                        value={form.price}
-                        onChange={handleInput}
-                        required
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <label className="block text-sm font-medium mb-1">
-                        Location
-                      </label>
-                      <Input
-                        name="location"
-                        value={form.location}
-                        onChange={handleInput}
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <div className="flex-1">
-                      <label className="block text-sm font-medium mb-1">
-                        Type
-                      </label>
-                      <select
-                        name="type"
-                        value={form.type}
-                        onChange={handleInput}
-                        className="w-full border rounded-md px-2 py-2"
-                      >
-                        <option>House</option>
-                        <option>Condo</option>
-                        <option>Loft</option>
-                        <option>Commercial</option>
-                        <option>Land</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id="featured"
-                      name="featured"
-                      checked={form.featured}
-                      onChange={handleInput}
-                      className="h-4 w-4"
-                    />
-                    <label htmlFor="featured" className="text-sm font-medium">
-                      Mark as Featured
-                    </label>
-                  </div>
-                  <div className="flex gap-2">
-                    <div className="flex-1">
-                      <label className="block text-sm font-medium mb-1">
-                        Bedrooms
-                      </label>
-                      <Input
-                        name="bedrooms"
-                        type="number"
-                        value={form.bedrooms}
-                        onChange={handleInput}
-                        required
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <label className="block text-sm font-medium mb-1">
-                        Bathrooms
-                      </label>
-                      <Input
-                        name="bathrooms"
-                        type="number"
-                        value={form.bathrooms}
-                        onChange={handleInput}
-                        required
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <label className="block text-sm font-medium mb-1">
-                        Area (sqft)
-                      </label>
-                      <Input
-                        name="area"
-                        type="number"
-                        value={form.area}
-                        onChange={handleInput}
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Features
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                      {allFeatures.map((feature) => (
-                        <label
-                          key={feature}
-                          className="flex items-center space-x-2"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={form.features.includes(feature)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setForm((prev) => ({
-                                  ...prev,
-                                  features: [...prev.features, feature],
-                                }))
-                              } else {
-                                setForm((prev) => ({
-                                  ...prev,
-                                  features: prev.features.filter(
-                                    (f) => f !== feature
-                                  ),
-                                }))
-                              }
-                            }}
-                          />
-                          <span>{feature}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Images (max 10)
-                    </label>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={handleImageChange}
-                      disabled={selectedFiles.length >= 10}
-                    />
+                <div className="p-6 pb-4">
+                  <h2 className="font-heading text-xl font-bold mb-4">
+                    Add Property
+                  </h2>
+                  {error && <div className="text-red-500 mb-2">{error}</div>}
+                  {success && (
+                    <div className="text-green-600 mb-2">{success}</div>
+                  )}
+                </div>
 
-                    {/* Selected files preview */}
-                    {previews.length > 0 && (
-                      <div className="mt-4">
-                        <p className="text-sm font-medium mb-2">
-                          Selected Images:
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                          {previews.map((preview, idx) => (
-                            <div key={idx} className="relative group">
-                              <img
-                                src={preview}
-                                alt="Preview"
-                                className="w-24 h-24 object-cover rounded-md border"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => removeSelectedImage(idx)}
-                                className="absolute top-1 right-1 p-1 bg-red-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                              >
-                                <X className="h-4 w-4 text-white" />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
+                <div className="flex-1 overflow-y-auto px-6">
+                  <div className="space-y-4 pb-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Title
+                      </label>
+                      <Input
+                        name="title"
+                        value={form.title}
+                        onChange={handleInput}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Description
+                      </label>
+                      <Textarea
+                        name="description"
+                        value={form.description}
+                        onChange={handleInput}
+                        required
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <label className="block text-sm font-medium mb-1">
+                          Price
+                        </label>
+                        <Input
+                          name="price"
+                          type="number"
+                          value={form.price}
+                          onChange={handleInput}
+                          required
+                        />
                       </div>
-                    )}
+                    </div>
+
+                    {/* Location Selector */}
+                    <LocationSelector
+                      onLocationChange={handleLocationChange}
+                      initialLocation={{
+                        county: form.county,
+                        constituency: form.constituency,
+                        ward: form.ward,
+                      }}
+                    />
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <label className="block text-sm font-medium mb-1">
+                          Type
+                        </label>
+                        <select
+                          name="type"
+                          value={form.type}
+                          onChange={handleInput}
+                          className="w-full border rounded-md px-2 py-2"
+                        >
+                          <option>House</option>
+                          <option>Condo</option>
+                          <option>Loft</option>
+                          <option>Commercial</option>
+                          <option>Land</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="featured"
+                        name="featured"
+                        checked={form.featured}
+                        onChange={handleInput}
+                        className="h-4 w-4"
+                      />
+                      <label htmlFor="featured" className="text-sm font-medium">
+                        Mark as Featured
+                      </label>
+                    </div>
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <label className="block text-sm font-medium mb-1">
+                          Bedrooms
+                        </label>
+                        <Input
+                          name="bedrooms"
+                          type="number"
+                          value={form.bedrooms}
+                          onChange={handleInput}
+                          required
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <label className="block text-sm font-medium mb-1">
+                          Bathrooms
+                        </label>
+                        <Input
+                          name="bathrooms"
+                          type="number"
+                          value={form.bathrooms}
+                          onChange={handleInput}
+                          required
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <label className="block text-sm font-medium mb-1">
+                          Area (sqft)
+                        </label>
+                        <Input
+                          name="area"
+                          type="number"
+                          value={form.area}
+                          onChange={handleInput}
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Features
+                      </label>
+                      <div className="flex flex-wrap gap-2">
+                        {allFeatures.map((feature) => (
+                          <label
+                            key={feature}
+                            className="flex items-center space-x-2"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={form.features.includes(feature)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setForm((prev) => ({
+                                    ...prev,
+                                    features: [...prev.features, feature],
+                                  }))
+                                } else {
+                                  setForm((prev) => ({
+                                    ...prev,
+                                    features: prev.features.filter(
+                                      (f) => f !== feature
+                                    ),
+                                  }))
+                                }
+                              }}
+                            />
+                            <span>{feature}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Images (max 10)
+                      </label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handleImageChange}
+                        disabled={selectedFiles.length >= 10}
+                      />
+
+                      {/* Selected files preview */}
+                      {previews.length > 0 && (
+                        <div className="mt-4">
+                          <p className="text-sm font-medium mb-2">
+                            Selected Images:
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {previews.map((preview, idx) => (
+                              <div key={idx} className="relative group">
+                                <img
+                                  src={preview}
+                                  alt="Preview"
+                                  className="w-24 h-24 object-cover rounded-md border"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => removeSelectedImage(idx)}
+                                  className="absolute top-1 right-1 p-1 bg-red-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                  <X className="h-4 w-4 text-white" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
+                </div>
+
+                {/* Fixed Submit Button */}
+                <div className="p-6 pt-4 border-t bg-gray-50 rounded-b-xl">
                   <Button type="submit" className="w-full" disabled={uploading}>
                     {uploading ? 'Adding Property...' : 'Add Property'}
                   </Button>
-                </form>
-              </div>
+                </div>
+              </form>
             </div>
           )}
 
@@ -761,6 +846,26 @@ export default function Admin() {
                     </div>
                   </div>
                 </Link>
+
+                <button
+                  onClick={handleCheckAlerts}
+                  disabled={checkingAlerts}
+                  className="w-full"
+                >
+                  <div className="flex items-center space-x-3 p-4 rounded-lg border border-border hover:bg-secondary/50 transition-colors">
+                    <Bell className="h-8 w-8 text-accent" />
+                    <div>
+                      <h3 className="font-medium text-foreground">
+                        Check Property Alerts
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        {checkingAlerts
+                          ? 'Checking for new matches...'
+                          : 'Send alerts for new matching properties'}
+                      </p>
+                    </div>
+                  </div>
+                </button>
               </CardContent>
             </Card>
 

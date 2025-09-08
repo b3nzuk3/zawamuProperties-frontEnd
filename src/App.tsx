@@ -21,6 +21,7 @@ import AdminBlog from './pages/AdminBlog'
 import AdminSettings from './pages/AdminSettings'
 import AdminAnalytics from './pages/AdminAnalytics'
 import AdminViewingRequests from './pages/AdminViewingRequests'
+import UserDashboard from './pages/UserDashboard'
 
 const queryClient = new QueryClient()
 
@@ -47,6 +48,7 @@ const App = () => (
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/dashboard" element={<UserDashboard />} />
             <Route path="/test-mdx" element={<TestMDXEditor />} />
             <Route
               path="/admin"

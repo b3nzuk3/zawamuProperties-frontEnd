@@ -121,7 +121,7 @@ export default function FeaturedListings() {
                     <Link to={`/listings/${property._id || property.id}`}>
                       <Button
                         variant="outline"
-                        className="w-full group-hover:bg-accent group-hover:text-accent-foreground transition-colors"
+                        className="w-full hover:bg-accent hover:text-accent-foreground transition-colors"
                       >
                         View Details
                         <ArrowRight className="h-4 w-4 ml-2" />
@@ -133,7 +133,7 @@ export default function FeaturedListings() {
                     >
                       <Button
                         variant="secondary"
-                        className="w-full group-hover:bg-accent group-hover:text-accent-foreground transition-colors"
+                        className="w-full hover:bg-accent hover:text-accent-foreground transition-colors"
                       >
                         <Calendar className="h-4 w-4 mr-2" />
                         Schedule Viewing

@@ -9,6 +9,7 @@ import {
   Phone,
   User,
   Building2,
+  Bell,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -19,6 +20,7 @@ const navigation = [
   { name: 'Blog', href: '/blog', icon: BookOpen },
   { name: 'About', href: '/about', icon: User },
   { name: 'Contact', href: '/contact', icon: Phone },
+  { name: 'My Dashboard', href: '/dashboard', icon: Bell },
 ]
 
 export default function Header() {
