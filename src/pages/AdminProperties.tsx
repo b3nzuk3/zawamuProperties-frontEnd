@@ -4,7 +4,14 @@ import { Button } from '@/components/ui/button'
 import api from '@/lib/api'
 
 const allFeatures = ['Pool', 'Garage', 'Garden', 'Gym', 'Fireplace']
-const allTypes = ['House', 'Condo', 'Loft', 'Commercial', 'Land']
+const allTypes = [
+  'Maisonette',
+  'Apartment',
+  'Bungalow',
+  'Townhouse',
+  'Land',
+  'Office space',
+]
 
 export default function AdminProperties() {
   const [properties, setProperties] = useState<any[]>([])

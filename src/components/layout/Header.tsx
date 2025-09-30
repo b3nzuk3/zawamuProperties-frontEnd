@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import {
   Menu,
@@ -27,6 +27,8 @@ const navigation = [
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [isHidden, setIsHidden] = useState(false)
+  const [lastScrollY, setLastScrollY] = useState(0)
   const location = useLocation()
 
   const isActivePage = (href: string) => {
@@ -36,8 +38,32 @@ export default function Header() {
     return location.pathname.startsWith(href)
   }
 
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentY = window.scrollY
+      const isScrollingDown = currentY > lastScrollY
+
+      // Never hide at the very top, and don't hide while mobile menu is open
+      if (currentY < 10 || mobileMenuOpen) {
+        setIsHidden(false)
+      } else {
+        setIsHidden(isScrollingDown)
+      }
+
+      setLastScrollY(currentY)
+    }
+
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [lastScrollY, mobileMenuOpen])
+
   return (
-    <header className="bg-background/95 backdrop-blur-sm border-b border-border sticky top-0 z-50">
+    <header
+      className={cn(
+        'bg-background/95 backdrop-blur-sm border-b border-border sticky top-0 z-50 transition-transform duration-300',
+        isHidden ? '-translate-y-full' : 'translate-y-0'
+      )}
+    >
       <nav className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 justify-between items-center">
           {/* Logo */}

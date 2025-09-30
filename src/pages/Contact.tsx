@@ -30,7 +30,7 @@ const contactInfo = [
   {
     icon: Mail,
     title: 'Email Us',
-    details: ['info@realestatepro.com', 'We respond within 24 hours'],
+    details: ['Zawamuproperty@gmail.com', 'We respond within 24 hours'],
     action: 'Send Email',
   },
   {

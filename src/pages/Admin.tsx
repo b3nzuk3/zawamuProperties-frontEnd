@@ -60,7 +60,7 @@ export default function Admin() {
     constituency: '',
     ward: '',
     coordinates: null as [number, number] | null,
-    type: 'House',
+    type: 'Maisonette',
     bedrooms: '',
     bathrooms: '',
     area: '',
@@ -179,7 +179,7 @@ export default function Admin() {
         constituency: '',
         ward: '',
         coordinates: null,
-        type: 'House',
+        type: 'Maisonette',
         bedrooms: '',
         bathrooms: '',
         area: '',
@@ -444,11 +444,12 @@ export default function Admin() {
                           onChange={handleInput}
                           className="w-full border rounded-md px-2 py-2"
                         >
-                          <option>House</option>
-                          <option>Condo</option>
-                          <option>Loft</option>
-                          <option>Commercial</option>
+                          <option>Maisonette</option>
+                          <option>Apartment</option>
+                          <option>Bungalow</option>
+                          <option>Townhouse</option>
                           <option>Land</option>
+                          <option>Office space</option>
                         </select>
                       </div>
                     </div>
@@ -779,6 +780,42 @@ export default function Admin() {
                 <CardTitle>Quick Actions</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* Move Viewing Requests to top */}
+                <Link to="/admin/viewing-requests" className="block">
+                  <div className="flex items-center space-x-3 p-4 rounded-lg border border-border hover:bg-secondary/50 transition-colors">
+                    <Calendar className="h-8 w-8 text-accent" />
+                    <div>
+                      <h3 className="font-medium text-foreground">
+                        Viewing Requests
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        Manage property viewing appointments
+                      </p>
+                    </div>
+                  </div>
+                </Link>
+
+                {/* Move Check Property Alerts next */}
+                <button
+                  onClick={handleCheckAlerts}
+                  disabled={checkingAlerts}
+                  className="w-full block text-left"
+                >
+                  <div className="flex items-center space-x-3 p-4 rounded-lg border border-border hover:bg-secondary/50 transition-colors">
+                    <Bell className="h-8 w-8 text-accent" />
+                    <div>
+                      <h3 className="font-medium text-foreground">
+                        Check Property Alerts
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        {checkingAlerts
+                          ? 'Checking for new matches...'
+                          : 'Send alerts for new matching properties'}
+                      </p>
+                    </div>
+                  </div>
+                </button>
+
                 <Link to="/admin/properties" className="block">
                   <div className="flex items-center space-x-3 p-4 rounded-lg border border-border hover:bg-secondary/50 transition-colors">
                     <Home className="h-8 w-8 text-accent" />
@@ -832,40 +869,6 @@ export default function Admin() {
                     </div>
                   </div>
                 </Link>
-
-                <Link to="/admin/viewing-requests" className="block">
-                  <div className="flex items-center space-x-3 p-4 rounded-lg border border-border hover:bg-secondary/50 transition-colors">
-                    <Calendar className="h-8 w-8 text-accent" />
-                    <div>
-                      <h3 className="font-medium text-foreground">
-                        Viewing Requests
-                      </h3>
-                      <p className="text-sm text-muted-foreground">
-                        Manage property viewing appointments
-                      </p>
-                    </div>
-                  </div>
-                </Link>
-
-                <button
-                  onClick={handleCheckAlerts}
-                  disabled={checkingAlerts}
-                  className="w-full"
-                >
-                  <div className="flex items-center space-x-3 p-4 rounded-lg border border-border hover:bg-secondary/50 transition-colors">
-                    <Bell className="h-8 w-8 text-accent" />
-                    <div>
-                      <h3 className="font-medium text-foreground">
-                        Check Property Alerts
-                      </h3>
-                      <p className="text-sm text-muted-foreground">
-                        {checkingAlerts
-                          ? 'Checking for new matches...'
-                          : 'Send alerts for new matching properties'}
-                      </p>
-                    </div>
-                  </div>
-                </button>
               </CardContent>
             </Card>
 

@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/select'
 import { Slider } from '@/components/ui/slider'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import api from '@/lib/api'
 import { ScheduleViewingModal } from '@/components/ui/schedule-viewing-modal'
 import { LocationSelector } from '@/components/ui/location-selector'
@@ -32,6 +32,7 @@ import { SaveSearchModal } from '@/components/ui/save-search-modal'
 import { DualCurrencyPrice } from '@/components/ui/dual-currency-price'
 
 export default function Listings() {
+  const navigate = useNavigate()
   const [properties, setProperties] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -296,28 +297,30 @@ export default function Listings() {
                       Property Type
                     </label>
                     <div className="space-y-2">
-                      {['House', 'Condo', 'Loft', 'Commercial', 'Land'].map(
-                        (type) => (
-                          <div
-                            key={type}
-                            className="flex items-center space-x-2"
+                      {[
+                        'Maisonette',
+                        'Apartment',
+                        'Bungalow',
+                        'Townhouse',
+                        'Land',
+                        'Office space',
+                      ].map((type) => (
+                        <div key={type} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={type}
+                            checked={selectedTypes.includes(type)}
+                            onCheckedChange={(checked) =>
+                              handleTypeChange(type, checked as boolean)
+                            }
+                          />
+                          <label
+                            htmlFor={type}
+                            className="text-sm text-muted-foreground"
                           >
-                            <Checkbox
-                              id={type}
-                              checked={selectedTypes.includes(type)}
-                              onCheckedChange={(checked) =>
-                                handleTypeChange(type, checked as boolean)
-                              }
-                            />
-                            <label
-                              htmlFor={type}
-                              className="text-sm text-muted-foreground"
-                            >
-                              {type}
-                            </label>
-                          </div>
-                        )
-                      )}
+                            {type}
+                          </label>
+                        </div>
+                      ))}
                     </div>
                   </div>
 
@@ -431,7 +434,10 @@ export default function Listings() {
               {filteredProperties.map((property) => (
                 <Card
                   key={property._id || property.id}
-                  className="property-card group overflow-hidden"
+                  className="property-card group overflow-hidden cursor-pointer"
+                  onClick={() =>
+                    navigate(`/listings/${property._id || property.id}`)
+                  }
                 >
                   <div className="relative">
                     <img
@@ -493,14 +499,21 @@ export default function Listings() {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Link to={`/listings/${property._id || property.id}`}>
+                      <Link
+                        to={`/listings/${property._id || property.id}`}
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <Button className="w-full">View Details</Button>
                       </Link>
                       <ScheduleViewingModal
                         propertyId={property._id || property.id}
                         propertyTitle={property.title}
                       >
-                        <Button variant="outline" className="w-full">
+                        <Button
+                          variant="outline"
+                          className="w-full"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           Schedule Viewing
                         </Button>
                       </ScheduleViewingModal>

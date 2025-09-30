@@ -307,7 +307,7 @@ export default function About() {
                 </div>
                 <div className="flex items-center justify-center space-x-2">
                   <Mail className="h-5 w-5" />
-                  <span>info@zawamuproperties.com</span>
+                  <span>Zawamuproperty@gmail.com</span>
                 </div>
               </div>
             </CardContent>
