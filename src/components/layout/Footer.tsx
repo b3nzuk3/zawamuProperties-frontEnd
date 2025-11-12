@@ -54,12 +54,12 @@ export default function Footer() {
                 <div className="flex items-center space-x-3">
                   <MapPin className="h-4 w-4 text-accent" />
                   <span className="text-sm">
-                    123 Zawamu Ave, City, State 12345
+                    Bypass Arcade, 1st Floor, Kahawa West along Northern Bypass
                   </span>
                 </div>
                 <div className="flex items-center space-x-3">
                   <Phone className="h-4 w-4 text-accent" />
-                  <span className="text-sm">(555) 123-4567</span>
+                  <span className="text-sm">0711168716</span>
                 </div>
                 <div className="flex items-center space-x-3">
                   <Mail className="h-4 w-4 text-accent" />

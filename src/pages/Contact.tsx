@@ -18,13 +18,13 @@ const contactInfo = [
   {
     icon: MapPin,
     title: 'Visit Our Office',
-    details: ['123 Real Estate Ave', 'City, State 12345'],
+    details: ['Bypass Arcade', '1st Floor, Kahawa West along Northern Bypass'],
     action: 'Get Directions',
   },
   {
     icon: Phone,
     title: 'Call Us',
-    details: ['(555) 123-4567', 'Mon-Fri 9AM-6PM'],
+    details: ['0711168716', 'Mon-Fri 9AM-6PM'],
     action: 'Call Now',
   },
   {
@@ -210,7 +210,7 @@ export default function Contact() {
                       onChange={(e) =>
                         handleInputChange('phone', e.target.value)
                       }
-                      placeholder="(555) 123-4567"
+                      placeholder="0711168716"
                     />
                   </div>
                   <div>
@@ -312,7 +312,7 @@ export default function Contact() {
                     <MapPin className="h-12 w-12 text-accent mx-auto mb-2" />
                     <p className="text-muted-foreground">Interactive Map</p>
                     <p className="text-sm text-muted-foreground">
-                      123 Zawamu Ave, City, State
+                      Bypass Arcade, 1st Floor, Kahawa West along Northern Bypass
                     </p>
                   </div>
                 </div>
@@ -387,7 +387,7 @@ export default function Contact() {
                     className="border-accent text-accent hover:bg-accent hover:text-accent-foreground"
                   >
                     <Phone className="h-4 w-4 mr-2" />
-                    (555) 123-4567
+                    0711168716
                   </Button>
                 </CardContent>
               </Card>

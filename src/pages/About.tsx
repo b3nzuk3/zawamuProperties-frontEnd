@@ -299,11 +299,11 @@ export default function About() {
               <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
                 <div className="flex items-center justify-center space-x-2">
                   <MapPin className="h-5 w-5" />
-                  <span>123 Zawamu Ave, City, State 12345</span>
+                  <span>Bypass Arcade, 1st Floor, Kahawa West along Northern Bypass</span>
                 </div>
                 <div className="flex items-center justify-center space-x-2">
                   <Phone className="h-5 w-5" />
-                  <span>(555) 123-4567</span>
+                  <span>0711168716</span>
                 </div>
                 <div className="flex items-center justify-center space-x-2">
                   <Mail className="h-5 w-5" />
