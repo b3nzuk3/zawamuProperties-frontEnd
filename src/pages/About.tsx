@@ -232,7 +232,7 @@ export default function About() {
       </section>
 
       {/* Team Section */}
-      <section className="py-16 bg-secondary/30">
+      {/* <section className="py-16 bg-secondary/30">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="font-heading font-bold text-3xl lg:text-4xl text-foreground mb-4">
@@ -285,7 +285,7 @@ export default function About() {
             ))}
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* Contact CTA */}
       <section className="py-16">
