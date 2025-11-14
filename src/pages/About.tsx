@@ -8,6 +8,8 @@ import {
   MapPin,
   Phone,
   Mail,
+  Handshake,
+  Lightbulb,
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -16,7 +18,7 @@ import { Link } from 'react-router-dom'
 const stats = [
   { label: 'Properties Sold', value: '500+', icon: Home },
   { label: 'Happy Clients', value: '1000+', icon: Users },
-  { label: 'Years Experience', value: '15+', icon: Award },
+  { label: 'Years Experience', value: '5+', icon: Award },
   { label: 'Client Satisfaction', value: '98%', icon: Star },
 ]
 
@@ -55,28 +57,34 @@ const team = [
 
 const values = [
   {
-    title: 'Integrity First',
+    title: 'Integrity',
     description:
-      'We believe in honest, transparent communication and ethical business practices in every transaction.',
+      'We act with honesty and professionalism in all we do.',
     icon: CheckCircle,
   },
   {
-    title: 'Client-Centered',
+    title: 'Innovation',
     description:
-      'Your needs and goals are our priority. We listen, understand, and deliver personalized solutions.',
+      'Adopting new solutions for modern real estate needs.',
+    icon: Lightbulb,
+  },
+  {
+    title: 'Client Focus',
+    description:
+      'Putting every client's goals first.',
     icon: Users,
   },
   {
     title: 'Market Expertise',
     description:
       'Deep local knowledge and market insights ensure you make informed decisions with confidence.',
-    icon: Award,
+    icon: Star,
   },
   {
-    title: 'Results Driven',
+    title: 'Relationships',
     description:
-      'We measure our success by your satisfaction and the achievement of your real estate goals.',
-    icon: Star,
+      'Building trust that lasts beyond each transaction.',
+    icon: Handshake,
   },
 ]
 
@@ -90,10 +98,11 @@ export default function About() {
             <h1 className="font-heading font-bold text-4xl lg:text-5xl mb-6">
               About Zawamu Properties
             </h1>
-            <p className="text-xl text-primary-foreground/90 max-w-3xl mx-auto">
-              For over 15 years, we've been helping families and investors find
-              their perfect properties. Our commitment to excellence and
-              personalized service sets us apart in the real estate industry.
+            <p className="text-xl text-primary-foreground/90 max-w-3xl mx-auto mb-4">
+              Guided by Integrity, Driven by Expertise, Focused on You.
+            </p>
+            <p className="text-lg text-primary-foreground/80 max-w-3xl mx-auto italic">
+              "Empowering every client to make confident property decisions and secure the best deals in the market."
             </p>
           </div>
         </div>
@@ -134,28 +143,23 @@ export default function About() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
               <h2 className="font-heading font-bold text-3xl lg:text-4xl text-foreground mb-6">
-                Our Story
+                ABOUT US
               </h2>
               <div className="space-y-4 text-muted-foreground">
                 <p>
-                  Founded in 2009, Zawamu Properties began with a simple
-                  mission: to make real estate transactions more transparent,
-                  efficient, and successful for our clients. What started as a
-                  small boutique agency has grown into one of the most trusted
-                  names in the industry.
+                  Founded in 2025, Zawamu Properties brings together over five years of experience in Kenya's dynamic real estate industry. Having witnessed the sector's evolution through various economic cycles, technological advancements, and shifting buyer preferences, we understand the value of adaptability, innovation, and lasting relationships.
                 </p>
                 <p>
-                  We've witnessed the evolution of the real estate market
-                  through various economic cycles, technology advances, and
-                  changing buyer preferences. This experience has taught us the
-                  importance of adaptability, innovation, and maintaining strong
-                  relationships.
+                  Our mission is to educate property buyers and ensure every transaction is seamless, transparent, and guided by integrity. We believe that informed clients make better decisions — and our commitment to honesty and professionalism is reflected in every step of the process.
                 </p>
                 <p>
-                  Today, we're proud to serve clients across multiple markets,
-                  from first-time homebuyers to luxury property investors. Our
-                  success is measured not just in transactions closed, but in
-                  the lasting relationships we build with every client.
+                  At Zawamu Properties, we are passionate about helping our clients access the best deals in the market while empowering them with the knowledge they need to navigate their real estate journey confidently. From first-time homebuyers to luxury property investors, we tailor our services to meet diverse needs and deliver measurable value.
+                </p>
+                <p>
+                  Today, we are proud to serve clients across multiple markets, with our success defined not only by the properties we sell but by the trust and long-term relationships we build with every client.
+                </p>
+                <p>
+                  Our office remains a space where real estate meets reliability — and every interaction begins with a genuine commitment to excellence.
                 </p>
               </div>
             </div>
@@ -183,7 +187,7 @@ export default function About() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
             {values.map((value, index) => {
               const Icon = value.icon
               return (
