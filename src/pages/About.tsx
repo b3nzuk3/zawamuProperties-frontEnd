@@ -58,20 +58,17 @@ const team = [
 const values = [
   {
     title: 'Integrity',
-    description:
-      'We act with honesty and professionalism in all we do.',
+    description: 'We act with honesty and professionalism in all we do.',
     icon: CheckCircle,
   },
   {
     title: 'Innovation',
-    description:
-      'Adopting new solutions for modern real estate needs.',
+    description: 'Adopting new solutions for modern real estate needs.',
     icon: Lightbulb,
   },
   {
     title: 'Client Focus',
-    description:
-      'Putting every client's goals first.',
+    description: "Putting every client's goals first.",
     icon: Users,
   },
   {
@@ -82,8 +79,7 @@ const values = [
   },
   {
     title: 'Relationships',
-    description:
-      'Building trust that lasts beyond each transaction.',
+    description: 'Building trust that lasts beyond each transaction.',
     icon: Handshake,
   },
 ]
@@ -102,7 +98,8 @@ export default function About() {
               Guided by Integrity, Driven by Expertise, Focused on You.
             </p>
             <p className="text-lg text-primary-foreground/80 max-w-3xl mx-auto italic">
-              "Empowering every client to make confident property decisions and secure the best deals in the market."
+              "Empowering every client to make confident property decisions and
+              secure the best deals in the market."
             </p>
           </div>
         </div>
@@ -147,19 +144,38 @@ export default function About() {
               </h2>
               <div className="space-y-4 text-muted-foreground">
                 <p>
-                  Founded in 2025, Zawamu Properties brings together over five years of experience in Kenya's dynamic real estate industry. Having witnessed the sector's evolution through various economic cycles, technological advancements, and shifting buyer preferences, we understand the value of adaptability, innovation, and lasting relationships.
+                  Founded in 2025, Zawamu Properties brings together over five
+                  years of experience in Kenya's dynamic real estate industry.
+                  Having witnessed the sector's evolution through various
+                  economic cycles, technological advancements, and shifting
+                  buyer preferences, we understand the value of adaptability,
+                  innovation, and lasting relationships.
                 </p>
                 <p>
-                  Our mission is to educate property buyers and ensure every transaction is seamless, transparent, and guided by integrity. We believe that informed clients make better decisions — and our commitment to honesty and professionalism is reflected in every step of the process.
+                  Our mission is to educate property buyers and ensure every
+                  transaction is seamless, transparent, and guided by integrity.
+                  We believe that informed clients make better decisions — and
+                  our commitment to honesty and professionalism is reflected in
+                  every step of the process.
                 </p>
                 <p>
-                  At Zawamu Properties, we are passionate about helping our clients access the best deals in the market while empowering them with the knowledge they need to navigate their real estate journey confidently. From first-time homebuyers to luxury property investors, we tailor our services to meet diverse needs and deliver measurable value.
+                  At Zawamu Properties, we are passionate about helping our
+                  clients access the best deals in the market while empowering
+                  them with the knowledge they need to navigate their real
+                  estate journey confidently. From first-time homebuyers to
+                  luxury property investors, we tailor our services to meet
+                  diverse needs and deliver measurable value.
                 </p>
                 <p>
-                  Today, we are proud to serve clients across multiple markets, with our success defined not only by the properties we sell but by the trust and long-term relationships we build with every client.
+                  Today, we are proud to serve clients across multiple markets,
+                  with our success defined not only by the properties we sell
+                  but by the trust and long-term relationships we build with
+                  every client.
                 </p>
                 <p>
-                  Our office remains a space where real estate meets reliability — and every interaction begins with a genuine commitment to excellence.
+                  Our office remains a space where real estate meets reliability
+                  — and every interaction begins with a genuine commitment to
+                  excellence.
                 </p>
               </div>
             </div>
@@ -303,7 +319,9 @@ export default function About() {
               <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
                 <div className="flex items-center justify-center space-x-2">
                   <MapPin className="h-5 w-5" />
-                  <span>Bypass Arcade, 1st Floor, Kahawa West along Northern Bypass</span>
+                  <span>
+                    Bypass Arcade, 1st Floor, Kahawa West along Northern Bypass
+                  </span>
                 </div>
                 <div className="flex items-center justify-center space-x-2">
                   <Phone className="h-5 w-5" />
