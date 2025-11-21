@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import Layout from '@/components/layout/Layout'
 import { Button } from '@/components/ui/button'
 import api from '@/lib/api'
+import { X } from 'lucide-react'
 
 const allFeatures = ['Pool', 'Garage', 'Garden', 'Gym', 'Fireplace']
 const allTypes = [
@@ -23,6 +24,9 @@ export default function AdminProperties() {
   const [editProperty, setEditProperty] = useState<any | null>(null)
   const [editLoading, setEditLoading] = useState(false)
   const [editError, setEditError] = useState<string | null>(null)
+  const [newImageFiles, setNewImageFiles] = useState<File[]>([])
+  const [newImagePreviews, setNewImagePreviews] = useState<string[]>([])
+  const [uploadingImages, setUploadingImages] = useState(false)
 
   useEffect(() => {
     api
@@ -56,6 +60,8 @@ export default function AdminProperties() {
     setEditProperty({ ...property })
     setEditModal(true)
     setEditError(null)
+    setNewImageFiles([])
+    setNewImagePreviews([])
   }
 
   const handleEditChange = (e: any) => {
@@ -75,10 +81,59 @@ export default function AdminProperties() {
     }))
   }
 
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const files = Array.from(e.target.files).slice(
+        0,
+        10 - (editProperty?.images?.length || 0) - newImageFiles.length
+      ) as File[]
+      setNewImageFiles((prev) => [...prev, ...files])
+
+      // Create previews for selected files
+      files.forEach((file) => {
+        const reader = new FileReader()
+        reader.onloadend = () => {
+          setNewImagePreviews((prev) => [...prev, reader.result as string])
+        }
+        reader.readAsDataURL(file)
+      })
+    }
+  }
+
+  const removeExistingImage = (index: number) => {
+    setEditProperty((prev: any) => ({
+      ...prev,
+      images: (prev.images || []).filter((_: string, i: number) => i !== index),
+    }))
+  }
+
+  const removeNewImage = (index: number) => {
+    setNewImageFiles((prev) => prev.filter((_, i) => i !== index))
+    setNewImagePreviews((prev) => prev.filter((_, i) => i !== index))
+  }
+
   const handleEditSave = async () => {
     setEditLoading(true)
     setEditError(null)
+    setUploadingImages(true)
     try {
+      // Upload new images if any
+      let newImageUrls: string[] = []
+      if (newImageFiles.length > 0) {
+        const formData = new FormData()
+        newImageFiles.forEach((file) => formData.append('images', file))
+        const uploadRes = await api.post('/upload', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        })
+        newImageUrls = uploadRes.data.urls
+      }
+
+      // Merge existing images with new ones
+      const allImages = [
+        ...(editProperty.images || []),
+        ...newImageUrls,
+      ]
+
       await api.put(`/properties/${editProperty._id}`, {
         ...editProperty,
         price: Number(editProperty.price) || 0,
@@ -86,15 +141,23 @@ export default function AdminProperties() {
         bathrooms: editProperty.bathrooms ? Number(editProperty.bathrooms) : 0,
         area: editProperty.area ? Number(editProperty.area) : 0,
         features: editProperty.features || [],
+        images: allImages,
       })
       setProperties((props) =>
-        props.map((p) => (p._id === editProperty._id ? { ...editProperty } : p))
+        props.map((p) =>
+          p._id === editProperty._id
+            ? { ...editProperty, images: allImages }
+            : p
+        )
       )
       setEditModal(false)
+      setNewImageFiles([])
+      setNewImagePreviews([])
     } catch (err: any) {
       setEditError('Failed to update property')
     } finally {
       setEditLoading(false)
+      setUploadingImages(false)
     }
   }
 
@@ -186,8 +249,8 @@ export default function AdminProperties() {
 
           {/* Edit Modal */}
           {editModal && editProperty && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-              <div className="bg-white rounded-2xl shadow-card p-8 w-full max-w-lg relative">
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+              <div className="bg-white rounded-2xl shadow-card p-8 w-full max-w-lg relative max-h-[90vh] overflow-y-auto">
                 <button
                   className="absolute top-4 right-4 text-2xl text-muted-foreground hover:text-foreground"
                   onClick={() => setEditModal(false)}
@@ -202,7 +265,7 @@ export default function AdminProperties() {
                 )}
                 <div className="space-y-5">
                   <div>
-                    <label className="block text-sm font-medium mb-1">
+                    <label className="block text-sm font-medium mb-1 text-accent">
                       Title
                     </label>
                     <input
@@ -213,7 +276,7 @@ export default function AdminProperties() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">
+                    <label className="block text-sm font-medium mb-1 text-accent">
                       Description
                     </label>
                     <textarea
@@ -225,7 +288,7 @@ export default function AdminProperties() {
                   </div>
                   <div className="flex gap-3">
                     <div className="flex-1">
-                      <label className="block text-sm font-medium mb-1">
+                      <label className="block text-sm font-medium mb-1 text-accent">
                         Price
                       </label>
                       <input
@@ -237,7 +300,7 @@ export default function AdminProperties() {
                       />
                     </div>
                     <div className="flex-1">
-                      <label className="block text-sm font-medium mb-1">
+                      <label className="block text-sm font-medium mb-1 text-accent">
                         Location
                       </label>
                       <input
@@ -250,7 +313,7 @@ export default function AdminProperties() {
                   </div>
                   <div className="flex gap-3">
                     <div className="flex-1">
-                      <label className="block text-sm font-medium mb-1">
+                      <label className="block text-sm font-medium mb-1 text-accent">
                         Type
                       </label>
                       <select
@@ -269,7 +332,7 @@ export default function AdminProperties() {
                   </div>
                   <div className="flex gap-3">
                     <div className="flex-1">
-                      <label className="block text-sm font-medium mb-1">
+                      <label className="block text-sm font-medium mb-1 text-accent">
                         Bedrooms
                       </label>
                       <input
@@ -281,7 +344,7 @@ export default function AdminProperties() {
                       />
                     </div>
                     <div className="flex-1">
-                      <label className="block text-sm font-medium mb-1">
+                      <label className="block text-sm font-medium mb-1 text-accent">
                         Bathrooms
                       </label>
                       <input
@@ -293,7 +356,7 @@ export default function AdminProperties() {
                       />
                     </div>
                     <div className="flex-1">
-                      <label className="block text-sm font-medium mb-1">
+                      <label className="block text-sm font-medium mb-1 text-accent">
                         Area (sqft)
                       </label>
                       <input
@@ -306,7 +369,7 @@ export default function AdminProperties() {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">
+                    <label className="block text-sm font-medium mb-1 text-accent">
                       Features
                     </label>
                     <div className="flex flex-wrap gap-2">
@@ -335,15 +398,87 @@ export default function AdminProperties() {
                         checked={editProperty.featured || false}
                         onChange={handleEditChange}
                       />
-                      <span className="text-sm font-medium">Mark as Featured</span>
+                      <span className="text-sm font-medium text-accent">Mark as Featured</span>
                     </label>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1 text-accent">
+                      Images
+                    </label>
+                    {/* Existing Images */}
+                    {editProperty.images && editProperty.images.length > 0 && (
+                      <div className="mb-4">
+                        <p className="text-sm text-muted-foreground mb-2">
+                          Current Images:
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {editProperty.images.map((img: string, idx: number) => (
+                            <div key={idx} className="relative group">
+                              <img
+                                src={img}
+                                alt={`Property ${idx + 1}`}
+                                className="w-24 h-24 object-cover rounded-md border"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => removeExistingImage(idx)}
+                                className="absolute top-1 right-1 p-1 bg-red-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <X className="h-4 w-4 text-white" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {/* New Image Upload */}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleImageSelect}
+                      disabled={
+                        (editProperty?.images?.length || 0) +
+                          newImageFiles.length >=
+                        10
+                      }
+                      className="mb-2"
+                    />
+                    {/* New Image Previews */}
+                    {newImagePreviews.length > 0 && (
+                      <div className="mt-4">
+                        <p className="text-sm text-muted-foreground mb-2">
+                          New Images:
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {newImagePreviews.map((preview, idx) => (
+                            <div key={idx} className="relative group">
+                              <img
+                                src={preview}
+                                alt="Preview"
+                                className="w-24 h-24 object-cover rounded-md border"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => removeNewImage(idx)}
+                                className="absolute top-1 right-1 p-1 bg-red-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <X className="h-4 w-4 text-white" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <Button
                     onClick={handleEditSave}
-                    disabled={editLoading}
+                    disabled={editLoading || uploadingImages}
                     className="w-full mt-4 text-lg py-3"
                   >
-                    {editLoading ? 'Saving...' : 'Save Changes'}
+                    {editLoading || uploadingImages
+                      ? 'Saving...'
+                      : 'Save Changes'}
                   </Button>
                 </div>
               </div>
