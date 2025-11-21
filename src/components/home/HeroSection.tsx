@@ -95,7 +95,7 @@ export default function HeroSection() {
             <div className="w-px h-8 bg-border"></div>
             <div className="text-center">
               <div className="font-heading font-bold text-2xl text-foreground">
-                $50M+
+                KSh 7.5B+
               </div>
               <div className="text-sm text-muted-foreground">Total Sales</div>
             </div>

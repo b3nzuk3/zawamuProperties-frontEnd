@@ -154,7 +154,7 @@ export default function AdminProperties() {
                       <td className="p-3 font-medium">{property.title}</td>
                       <td className="p-3">{property.location}</td>
                       <td className="p-3">
-                        ${property.price.toLocaleString()}
+                        KSh {property.price.toLocaleString()}
                       </td>
                       <td className="p-3 space-x-2">
                         <Button
@@ -326,6 +326,17 @@ export default function AdminProperties() {
                         </label>
                       ))}
                     </div>
+                  </div>
+                  <div>
+                    <label className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        name="featured"
+                        checked={editProperty.featured || false}
+                        onChange={handleEditChange}
+                      />
+                      <span className="text-sm font-medium">Mark as Featured</span>
+                    </label>
                   </div>
                   <Button
                     onClick={handleEditSave}
