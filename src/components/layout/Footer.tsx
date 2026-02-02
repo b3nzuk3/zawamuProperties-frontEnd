@@ -38,30 +38,31 @@ export default function Footer() {
         <div className="py-16">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {/* Company Info */}
-            <div className="lg:col-span-2">
-              <Link to="/" className="flex items-center space-x-2">
-                <Building2 className="h-8 w-8 text-accent" />
-                <span className="font-heading font-bold text-xl">
-                  Zawamu Properties
-                </span>
+            <div className="lg:col-span-2 text-center md:text-left">
+              <Link to="/" className="flex items-center justify-center md:justify-start space-x-2">
+                <img 
+                  src="/assets/zawamu-logo.svg" 
+                  alt="Zawamu Properties Logo" 
+                  className="h-28 md:h-44 w-auto"
+                />
               </Link>
-              <p className="mt-4 text-sm text-primary-foreground/80 max-w-md">
+              <p className="mt-4 text-sm text-primary-foreground/80 max-w-md mx-auto md:mx-0">
                 Your trusted partner in finding the perfect property. We
                 specialize in luxury real estate with personalized service and
                 expert market knowledge.
               </p>
               <div className="mt-6 space-y-3">
-                <div className="flex items-center space-x-3">
+                <div className="flex items-center justify-center md:justify-start space-x-3">
                   <MapPin className="h-4 w-4 text-accent" />
                   <span className="text-sm">
                     Bypass Arcade, 1st Floor, Kahawa West along Northern Bypass
                   </span>
                 </div>
-                <div className="flex items-center space-x-3">
+                <div className="flex items-center justify-center md:justify-start space-x-3">
                   <Phone className="h-4 w-4 text-accent" />
                   <span className="text-sm">0711168716</span>
                 </div>
-                <div className="flex items-center space-x-3">
+                <div className="flex items-center justify-center md:justify-start space-x-3">
                   <Mail className="h-4 w-4 text-accent" />
                   <span className="text-sm">Zawamuproperty@gmail.com</span>
                 </div>
@@ -69,7 +70,7 @@ export default function Footer() {
             </div>
 
             {/* Quick Links */}
-            <div>
+            <div className="text-center md:text-left">
               <h3 className="font-heading font-semibold text-lg mb-4">
                 Quick Links
               </h3>
@@ -88,7 +89,7 @@ export default function Footer() {
             </div>
 
             {/* Legal & Social */}
-            <div>
+            <div className="text-center md:text-left">
               <h3 className="font-heading font-semibold text-lg mb-4">Legal</h3>
               <ul className="space-y-3 mb-6">
                 {footerNavigation.legal.map((item) => (
@@ -106,7 +107,7 @@ export default function Footer() {
               <h3 className="font-heading font-semibold text-lg mb-4">
                 Follow Us
               </h3>
-              <div className="flex space-x-4">
+              <div className="flex justify-center md:justify-start space-x-4">
                 {footerNavigation.social.map((item) => {
                   const Icon = item.icon
                   return (

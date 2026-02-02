@@ -65,13 +65,14 @@ export default function Header() {
       )}
     >
       <nav className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 justify-between items-center">
+        <div className="flex h-24 justify-between items-center">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
-            <Building2 className="h-8 w-8 text-accent" />
-            <span className="font-heading font-bold text-xl text-gradient">
-              Zawamu Properties
-            </span>
+            <img 
+              src="/assets/zawamu-logo.svg" 
+              alt="Zawamu Properties Logo" 
+              className="h-28 md:h-44 w-auto"
+            />
           </Link>
 
           {/* Desktop Navigation */}
