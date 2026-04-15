@@ -36,14 +36,14 @@ export default function Footer() {
     <footer className="bg-primary text-primary-foreground">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="py-16">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 items-start">
             {/* Company Info */}
             <div className="lg:col-span-2 text-center md:text-left">
-              <Link to="/" className="flex items-center justify-center md:justify-start space-x-2">
+              <Link to="/" className="flex items-center justify-center md:justify-start">
                 <img 
                   src="/assets/zawamu-logo.svg" 
                   alt="Zawamu Properties Logo" 
-                  className="h-28 md:h-44 w-auto"
+                  className="h-28 md:h-44 w-auto p-0 m-0"
                 />
               </Link>
               <p className="mt-4 text-sm text-primary-foreground/80 max-w-md mx-auto md:mx-0">
