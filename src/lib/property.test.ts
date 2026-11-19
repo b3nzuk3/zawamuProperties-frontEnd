@@ -25,6 +25,7 @@ describe('property form helpers', () => {
     expect(getPropertyEffectivePrice({ ...publicProperty, offerPercent: 10 })).toBe(90)
     expect(getPropertyEffectivePrice({ ...publicProperty, price: 1.01, offerPercent: 50 })).toBe(0.51)
     expect(getPropertyEffectivePrice({ ...publicProperty, effectivePrice: null, price: -1 })).toBeNull()
+    expect(getPropertyEffectivePrice({ ...publicProperty, effectivePrice: null, price: 100, offerPercent: 10 })).toBeNull()
   })
 
   it('allows legacy availability but does not allow sold or rented viewings', () => {

@@ -21,24 +21,14 @@ import {
 import { Checkbox } from './checkbox'
 import { useToast } from './use-toast'
 import api from '../../lib/api'
+import { summarizeSavedSearchCriteria } from '../../lib/savedSearch'
+import type { SavedSearchCriteria } from '../../lib/savedSearch'
 import { Bell, Save, X } from 'lucide-react'
 
 interface SaveSearchModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  searchCriteria: {
-    county?: string
-    constituency?: string
-    ward?: string
-    propertyTypes?: string[]
-    minPrice?: number
-    maxPrice?: number
-    minBedrooms?: number
-    maxBedrooms?: number
-    minBathrooms?: number
-    maxBathrooms?: number
-    searchTerm?: string
-  }
+  searchCriteria: SavedSearchCriteria
 }
 
 export function SaveSearchModal({
@@ -114,50 +104,6 @@ export function SaveSearchModal({
     }))
   }
 
-  const getSearchSummary = () => {
-    const parts = []
-
-    if (searchCriteria.county && searchCriteria.county !== 'all') {
-      if (searchCriteria.ward) {
-        parts.push(
-          `${searchCriteria.ward}, ${searchCriteria.constituency}, ${searchCriteria.county}`
-        )
-      } else if (searchCriteria.constituency) {
-        parts.push(`${searchCriteria.constituency}, ${searchCriteria.county}`)
-      } else {
-        parts.push(searchCriteria.county)
-      }
-    }
-
-    if (
-      searchCriteria.propertyTypes &&
-      searchCriteria.propertyTypes.length > 0
-    ) {
-      parts.push(`${searchCriteria.propertyTypes.join(', ')} properties`)
-    }
-
-    if (searchCriteria.minPrice || searchCriteria.maxPrice) {
-      const min = searchCriteria.minPrice
-        ? `KSh ${searchCriteria.minPrice.toLocaleString()}`
-        : 'Any'
-      const max = searchCriteria.maxPrice
-        ? `KSh ${searchCriteria.maxPrice.toLocaleString()}`
-        : 'Any'
-      parts.push(`Price: ${min} - ${max}`)
-    }
-
-    if (searchCriteria.minBedrooms || searchCriteria.maxBedrooms) {
-      const min = searchCriteria.minBedrooms || 'Any'
-      const max = searchCriteria.maxBedrooms || 'Any'
-      parts.push(`Bedrooms: ${min} - ${max}`)
-    }
-
-    if (searchCriteria.searchTerm) {
-      parts.push(`Search: "${searchCriteria.searchTerm}"`)
-    }
-
-    return parts.length > 0 ? parts.join(' • ') : 'All properties'
-  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -180,7 +126,7 @@ export function SaveSearchModal({
               Search Criteria:
             </div>
             <div className="text-sm text-muted-foreground">
-              {getSearchSummary()}
+              {summarizeSavedSearchCriteria(searchCriteria)}
             </div>
           </div>
 

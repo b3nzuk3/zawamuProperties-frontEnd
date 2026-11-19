@@ -41,8 +41,8 @@ const property = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 })
 
-const renderListings = () => render(
-  <MemoryRouter>
+const renderListings = (initialEntry = '/listings') => render(
+  <MemoryRouter initialEntries={[initialEntry]}>
     <Listings />
   </MemoryRouter>,
 )
@@ -50,6 +50,7 @@ const renderListings = () => render(
 beforeEach(() => {
   vi.clearAllMocks()
   vi.mocked(api.get).mockResolvedValue({ data: [] } as never)
+  vi.mocked(api.post).mockResolvedValue({ data: { success: true } } as never)
 })
 
 describe('public listings filters and actions', () => {
@@ -169,36 +170,142 @@ describe('public listings filters and actions', () => {
     expect(screen.getByText('Rented')).toBeInTheDocument()
   })
 
-  it('does not offer to save unsupported purpose or free-text-location criteria', async () => {
+  it('saves the visible location, purpose, taxonomy, effective-price and bedroom/bathroom/search criteria', async () => {
     const user = userEvent.setup()
-    vi.mocked(api.get).mockResolvedValue({ data: [property()] } as never)
-    renderListings()
+    const initialCriteria = { minBedrooms: 2, minBathrooms: 1 }
+    const criteria = {
+      location: 'Westlands',
+      listingPurpose: 'rent',
+      propertyTypes: ['Apartment'],
+      minPrice: 0,
+      maxPrice: 250_000.25,
+      minBedrooms: 2,
+      minBathrooms: 1,
+      searchTerm: 'garden',
+    }
+    renderListings(`/listings?search=${encodeURIComponent(JSON.stringify(initialCriteria))}`)
 
-    await screen.findByText('Nairobi Apartment')
+    await screen.findByRole('heading', { name: 'Property Listings' })
+    await user.type(screen.getByPlaceholderText('Search by property name or location...'), 'garden')
+    await user.click(screen.getByRole('button', { name: 'For Rent' }))
     await user.click(screen.getByRole('button', { name: 'Filters' }))
     await user.type(screen.getByLabelText('Location'), 'Westlands')
-    const saveSearch = screen.getByRole('button', { name: /save search/i })
-    expect(saveSearch).toBeDisabled()
-    expect(screen.getByText(/saved searches do not yet support free-text location/i)).toBeInTheDocument()
+    await user.click(screen.getByRole('checkbox', { name: 'Apartment' }))
+    await user.type(screen.getByLabelText('Minimum price'), '0')
+    await user.type(screen.getByLabelText('Maximum price'), '250000.25')
+    expect(screen.getAllByRole('combobox')[0]).toHaveTextContent('2+')
+    expect(screen.getAllByRole('combobox')[1]).toHaveTextContent('1+')
+    expect(screen.getByRole('button', { name: /save search/i })).toBeEnabled()
+    await user.click(screen.getByRole('button', { name: 'Save Search' }))
+    const dialog = screen.getByRole('dialog')
+    expect(within(dialog).getByText(/KSh 0/)).toBeInTheDocument()
+    expect(within(dialog).getByText(/KSh 250,000\.25/)).toBeInTheDocument()
+    await user.type(within(dialog).getByLabelText('Search Name *'), 'Westlands rentals')
+    await user.type(within(dialog).getByLabelText('Full Name *'), 'Test Visitor')
+    await user.type(within(dialog).getByLabelText('Email Address *'), 'visitor@example.test')
+    await user.click(within(dialog).getByRole('button', { name: 'Save Search' }))
 
-    await user.clear(screen.getByLabelText('Location'))
-    await user.click(screen.getByRole('button', { name: 'For Sale' }))
-    expect(screen.getByRole('button', { name: /save search/i })).toBeDisabled()
-    expect(screen.getByText(/saved searches do not yet support sale\/rent purpose/i)).toBeInTheDocument()
+    await waitFor(() => expect(api.post).toHaveBeenCalledWith('/saved-searches', expect.objectContaining({
+      searchCriteria: {
+        ...criteria,
+      },
+    })))
   })
 
-  it('does not save effective-price bounds as legacy base-price criteria', async () => {
+  it('replays saved criteria, including legacy structured fields and all bedroom/bathroom/search constraints', async () => {
+    const criteria = {
+      location: 'Kileleshwa',
+      listingPurpose: 'rent',
+      propertyTypes: ['apartment'],
+      minPrice: 0,
+      maxPrice: 900_000.25,
+      county: 'Nairobi',
+      constituency: 'Westlands',
+      ward: 'Parklands',
+      minBedrooms: 3,
+      maxBedrooms: 4,
+      minBathrooms: 1,
+      maxBathrooms: 2,
+      searchTerm: 'garden',
+    }
+    vi.mocked(api.get).mockResolvedValue({
+      data: [
+        property({
+          _id: 'match',
+          title: 'Garden rental in Kileleshwa',
+          location: 'Kileleshwa',
+          county: 'Nairobi',
+          constituency: 'Westlands',
+          ward: 'Parklands',
+          listingPurpose: 'rent',
+          price: 1_000_000,
+          offerPercent: 10,
+          effectivePrice: 900_000.25,
+          bedrooms: 3,
+          bathrooms: 1,
+        }),
+        property({ _id: 'missing-structured', title: 'Garden without county metadata', county: undefined }),
+        property({ _id: 'missing-bedrooms', title: 'Garden without bedroom data', bedrooms: undefined }),
+        property({ _id: 'wrong-purpose', title: 'Garden sale', listingPurpose: 'sale' }),
+      ],
+    } as never)
+    renderListings(`/listings?search=${encodeURIComponent(JSON.stringify(criteria))}`)
+
+    expect(await screen.findByText('Garden rental in Kileleshwa')).toBeInTheDocument()
+    expect(screen.queryByText('Garden without county metadata')).not.toBeInTheDocument()
+    expect(screen.queryByText('Garden without bedroom data')).not.toBeInTheDocument()
+    expect(screen.queryByText('Garden sale')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'For Rent' })).toHaveAttribute('aria-pressed', 'true')
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Filters' }))
+    expect(screen.getByLabelText('Location')).toHaveValue('Kileleshwa')
+    expect(screen.getByLabelText('Minimum price')).toHaveValue(0)
+    expect(screen.getByLabelText('Maximum price')).toHaveValue(900_000.25)
+    expect(screen.getAllByRole('combobox')[0]).toHaveTextContent('3+')
+    expect(screen.getAllByRole('combobox')[1]).toHaveTextContent('1+')
+    expect(screen.getByText(/Structured area:.*Nairobi/i)).toBeInTheDocument()
+  })
+
+  it('fails closed on unsupported replay fields and requires an explicit clear to browse', async () => {
     const user = userEvent.setup()
+    const criteria = { location: 'Nairobi', unsupportedLegacyField: 'must not be ignored' }
     vi.mocked(api.get).mockResolvedValue({ data: [property()] } as never)
-    renderListings()
-    await screen.findByRole('heading', { name: 'Nairobi Apartment' })
-    await user.click(screen.getByRole('button', { name: 'Filters' }))
-    await user.type(screen.getByLabelText('Maximum price'), '100000')
-    expect(screen.getByRole('button', { name: /save search/i })).toBeDisabled()
-    expect(screen.getByText(/saved searches do not yet support discounted-price filters/i)).toBeInTheDocument()
-    await user.clear(screen.getByLabelText('Maximum price'))
-    await user.type(screen.getByLabelText('Minimum price'), '0')
-    expect(screen.getByRole('button', { name: /save search/i })).toBeDisabled()
+    renderListings(`/listings?search=${encodeURIComponent(JSON.stringify(criteria))}`)
+
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent(/Unsupported saved search field/i)
+    expect(screen.queryByTestId('property-card')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Save Search' })).toBeDisabled()
+
+    await user.click(screen.getByRole('button', { name: 'Clear Filters' }))
+    expect(await screen.findByText('Nairobi Apartment')).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('retains hidden legacy bounds and structured criteria when saving a replayed search again', async () => {
+    const criteria = {
+      county: 'Nairobi',
+      constituency: 'Westlands',
+      ward: 'Parklands',
+      propertyTypes: ['house'],
+      minBedrooms: 2,
+      maxBedrooms: 4,
+      minBathrooms: 1,
+      maxBathrooms: 2,
+      searchTerm: 'garden',
+    }
+    const user = userEvent.setup()
+    renderListings(`/listings?search=${encodeURIComponent(JSON.stringify(criteria))}`)
+    await screen.findByRole('heading', { name: 'Property Listings' })
+    await user.click(screen.getByRole('button', { name: 'Save Search' }))
+    const dialog = screen.getByRole('dialog')
+    await user.type(within(dialog).getByLabelText('Search Name *'), 'Legacy houses')
+    await user.type(within(dialog).getByLabelText('Full Name *'), 'Test Visitor')
+    await user.type(within(dialog).getByLabelText('Email Address *'), 'visitor@example.test')
+    await user.click(within(dialog).getByRole('button', { name: 'Save Search' }))
+
+    await waitFor(() => expect(api.post).toHaveBeenCalledWith('/saved-searches', expect.objectContaining({
+      searchCriteria: criteria,
+    })))
   })
 
   it('keeps legacy id and image fallbacks in the public card', async () => {

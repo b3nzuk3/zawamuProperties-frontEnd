@@ -10,4 +10,12 @@ Object.defineProperty(window, 'matchMedia', {
     addEventListener: vi.fn(), removeEventListener: vi.fn(), dispatchEvent: vi.fn(),
   })),
 })
+Object.defineProperty(globalThis, 'ResizeObserver', {
+  writable: true,
+  value: class ResizeObserverMock {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  },
+})
 afterEach(() => { cleanup(); localStorage.clear() })

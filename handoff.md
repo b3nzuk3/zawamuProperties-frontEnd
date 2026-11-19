@@ -1,4 +1,14 @@
-# Frontend Handoff — Phase E
+# Frontend Handoff — Phase F
+
+## Completed Phase F local checkpoint — STOP
+
+Phase F is complete in the local commit containing this handoff on `main`, following E `7fa3e4c`. Listings save/replay purpose, free-text location, canonical/unambiguous legacy types, effective-price bounds and retained hidden/structured constraints. Invalid replay fails closed with explicit recovery. Saved-search summaries and previews use shared monthly/discounted prices, locations and availability presentation. No migration, backfill or catalog seeding was added.
+
+Final isolated lockfile installs passed; frontend162tests/24files and production build passed, backend105tests passed. Recorded final cross-phase production Chromium/Express/disposable Mongo acceptance:410check executions across C–F, with controlled mail/font/rate/API-failure fixtures explicitly identified. Owned databases/containers/listeners were cleaned and absence read back. Current source/test/config hashes match the executed aggregate snapshot. Independent spec and quality reviews approved; see `docs/phase-f-acceptance.md` for exact commands, review provenance, results and limitations.
+
+Typecheck retains1inherited location-selector county_coordinates diagnostic (the manager's2duplicate-field diagnostics were removed). Full lint14errors11warnings; changed-file lint2inherited modal any errors/1manager warning. Lockfiles unchanged; install advisory entries backend15/frontend48 are not a production-only audit or remediation. Public legacy saved-search ownership/privacy, matching scan scale, first-page preview, absent alert scheduler and duplicate-delivery risk remain documented.
+
+STOP after both scoped local commits. Nothing pushed/deployed; no production writes or real messages. Recipient remains TBD; approved SMTP/sender/recipient, owner allowlist, trusted origins, proxy/shared abuse controls and separately authorized real-provider delivery remain launch gates. Root plan/handoff are local-only; child handoff/acceptance docs versioned. Historical status below is superseded.
 
 ## Current accepted Phase E checkpoint (supersedes all history below)
 

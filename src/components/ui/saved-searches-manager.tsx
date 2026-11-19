@@ -28,6 +28,15 @@ import {
 import { Checkbox } from './checkbox'
 import { useToast } from './use-toast'
 import api from '../../lib/api'
+import { PropertyBadges } from '../properties/PropertyBadges'
+import { PropertyPrice } from '../properties/PropertyPrice'
+import { getPropertyLocation } from '../../lib/property'
+import {
+  summarizeSavedSearchCriteria,
+  validateSavedSearchCriteria,
+} from '../../lib/savedSearch'
+import type { SavedSearchCriteria } from '../../lib/savedSearch'
+import type { Property } from '../../types/property'
 import {
   Bell,
   BellOff,
@@ -36,10 +45,6 @@ import {
   Eye,
   Calendar,
   MapPin,
-  Home,
-  DollarSign,
-  Bed,
-  Bath,
   Search,
   AlertCircle,
 } from 'lucide-react'
@@ -51,20 +56,7 @@ interface SavedSearch {
   userEmail: string
   userName: string
   userPhone?: string
-  searchCriteria: {
-    county?: string
-    constituency?: string
-    ward?: string
-    propertyTypes?: string[]
-    minPrice?: number
-    maxPrice?: number
-    maxPrice?: number
-    minBedrooms?: number
-    maxBedrooms?: number
-    minBathrooms?: number
-    maxBathrooms?: number
-    searchTerm?: string
-  }
+  searchCriteria: SavedSearchCriteria
   alertSettings: {
     isActive: boolean
     frequency: string
@@ -80,6 +72,52 @@ interface SavedSearchesManagerProps {
   userEmail: string
 }
 
+interface MatchingState {
+  open: boolean
+  loading: boolean
+  properties: Partial<Property>[]
+  error?: string
+}
+
+function MatchingPropertyPreview({ property }: { property: Partial<Property> }) {
+  const typedProperty = property as Property
+  const location = getPropertyLocation(typedProperty)
+  const facts = [
+    typeof property.type === 'string' ? property.type : null,
+    typeof property.bedrooms === 'number' && Number.isFinite(property.bedrooms)
+      ? `${property.bedrooms} bed` : null,
+    typeof property.bathrooms === 'number' && Number.isFinite(property.bathrooms)
+      ? `${property.bathrooms} bath` : null,
+    typeof property.area === 'number' && Number.isFinite(property.area)
+      ? `${property.area.toLocaleString()} sqft` : null,
+  ].filter((fact): fact is string => Boolean(fact))
+
+  return (
+    <article className="rounded-lg border border-border bg-card p-4" data-testid="matched-property-card">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0 space-y-2">
+          {property.title && (
+            property._id
+              ? <a className="font-semibold text-foreground hover:text-primary" href={`/listings/${property._id}`}>{property.title}</a>
+              : <h4 className="font-semibold text-foreground">{property.title}</h4>
+          )}
+          <PropertyBadges property={typedProperty} />
+          <p className="flex items-center gap-1 text-sm text-muted-foreground">
+            <MapPin className="h-4 w-4 shrink-0" />
+            {location || 'Location unavailable'}
+          </p>
+          {facts.length > 0 && (
+            <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+              {facts.map((fact) => <span key={fact}>{fact}</span>)}
+            </div>
+          )}
+        </div>
+        <PropertyPrice property={typedProperty} className="shrink-0" />
+      </div>
+    </article>
+  )
+}
+
 export function SavedSearchesManager({ userEmail }: SavedSearchesManagerProps) {
   const [savedSearches, setSavedSearches] = useState<SavedSearch[]>([])
   const [loading, setLoading] = useState(true)
@@ -92,6 +130,7 @@ export function SavedSearchesManager({ userEmail }: SavedSearchesManagerProps) {
     isActive: true,
   })
   const [editLoading, setEditLoading] = useState(false)
+  const [matchingStates, setMatchingStates] = useState<Record<string, MatchingState>>({})
   const { toast } = useToast()
 
   useEffect(() => {
@@ -185,37 +224,49 @@ export function SavedSearchesManager({ userEmail }: SavedSearchesManagerProps) {
     }
   }
 
-  const getSearchSummary = (search: SavedSearch) => {
-    const parts = []
-    const criteria = search.searchCriteria
-
-    if (criteria.county && criteria.county !== 'all') {
-      if (criteria.ward) {
-        parts.push(
-          `${criteria.ward}, ${criteria.constituency}, ${criteria.county}`
-        )
-      } else if (criteria.constituency) {
-        parts.push(`${criteria.constituency}, ${criteria.county}`)
-      } else {
-        parts.push(criteria.county)
-      }
+  const toggleMatchingProperties = async (searchId: string) => {
+    const current = matchingStates[searchId]
+    if (current?.open) {
+      setMatchingStates((previous) => ({
+        ...previous,
+        [searchId]: { ...current, open: false },
+      }))
+      return
+    }
+    if (current && !current.error) {
+      setMatchingStates((previous) => ({
+        ...previous,
+        [searchId]: { ...current, open: true },
+      }))
+      return
     }
 
-    if (criteria.propertyTypes && criteria.propertyTypes.length > 0) {
-      parts.push(`${criteria.propertyTypes.join(', ')}`)
+    setMatchingStates((previous) => ({
+      ...previous,
+      [searchId]: { open: true, loading: true, properties: [] },
+    }))
+    try {
+      const response = await api.get(`/saved-searches/${searchId}/properties`)
+      const properties = response.data?.data?.properties
+      setMatchingStates((previous) => ({
+        ...previous,
+        [searchId]: {
+          open: true,
+          loading: false,
+          properties: Array.isArray(properties) ? properties as Partial<Property>[] : [],
+        },
+      }))
+    } catch {
+      setMatchingStates((previous) => ({
+        ...previous,
+        [searchId]: {
+          open: true,
+          loading: false,
+          properties: [],
+          error: 'Failed to load matching properties. Try again.',
+        },
+      }))
     }
-
-    if (criteria.minPrice || criteria.maxPrice) {
-      const min = criteria.minPrice
-        ? `KSh ${criteria.minPrice.toLocaleString()}`
-        : 'Any'
-      const max = criteria.maxPrice
-        ? `KSh ${criteria.maxPrice.toLocaleString()}`
-        : 'Any'
-      parts.push(`${min} - ${max}`)
-    }
-
-    return parts.length > 0 ? parts.join(' • ') : 'All properties'
   }
 
   const formatDate = (dateString: string) => {
@@ -268,8 +319,11 @@ export function SavedSearchesManager({ userEmail }: SavedSearchesManagerProps) {
       </div>
 
       <div className="grid gap-4">
-        {savedSearches.map((search) => (
-          <Card key={search._id} className="hover:shadow-md transition-shadow">
+        {savedSearches.map((search) => {
+          const criteriaValidation = validateSavedSearchCriteria(search.searchCriteria)
+          const matchingState = matchingStates[search._id]
+          return (
+          <Card key={search._id} data-testid="saved-search-card" className="hover:shadow-md transition-shadow">
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
                 <div className="space-y-1">
@@ -308,7 +362,9 @@ export function SavedSearchesManager({ userEmail }: SavedSearchesManagerProps) {
                   Search Criteria:
                 </div>
                 <div className="text-sm text-muted-foreground">
-                  {getSearchSummary(search)}
+                  {criteriaValidation.valid && criteriaValidation.criteria
+                    ? summarizeSavedSearchCriteria(criteriaValidation.criteria)
+                    : <span role="alert">Saved search criteria cannot be replayed: {criteriaValidation.error ?? 'Unknown criteria error.'}</span>}
                 </div>
               </div>
 
@@ -355,17 +411,27 @@ export function SavedSearchesManager({ userEmail }: SavedSearchesManagerProps) {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() =>
+                  disabled={!criteriaValidation.valid || criteriaValidation.criteria === null}
+                  onClick={() => {
+                    if (!criteriaValidation.valid || criteriaValidation.criteria === null) return
                     window.open(
-                      `/listings?search=${encodeURIComponent(
-                        JSON.stringify(search.searchCriteria)
-                      )}`,
-                      '_blank'
+                      `/listings?search=${encodeURIComponent(JSON.stringify(criteriaValidation.criteria))}`,
+                      '_blank',
+                      'noopener,noreferrer',
                     )
-                  }
+                  }}
                 >
                   <Eye className="h-4 w-4 mr-2" />
                   View Results
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => void toggleMatchingProperties(search._id)}
+                  aria-expanded={matchingState?.open ?? false}
+                  disabled={!criteriaValidation.valid || criteriaValidation.criteria === null || (matchingState?.loading ?? false)}
+                >
+                  {matchingState?.open ? 'Hide matching properties' : 'Show matching properties'}
                 </Button>
                 <Button
                   variant="outline"
@@ -377,9 +443,29 @@ export function SavedSearchesManager({ userEmail }: SavedSearchesManagerProps) {
                   Delete
                 </Button>
               </div>
+              {matchingState?.open && (
+                <div className="space-y-3 border-t border-border pt-4" aria-label={`Matching properties for ${search.name}`}>
+                  {matchingState.loading && (
+                    <p className="text-sm text-muted-foreground">Loading matching properties...</p>
+                  )}
+                  {matchingState.error && (
+                    <p className="text-sm text-destructive" role="alert">{matchingState.error}</p>
+                  )}
+                  {!matchingState.loading && !matchingState.error && matchingState.properties.length === 0 && (
+                    <p className="text-sm text-muted-foreground">No matching properties found.</p>
+                  )}
+                  {!matchingState.loading && matchingState.properties.map((property, index) => (
+                    <MatchingPropertyPreview
+                      key={property._id ?? `${search._id}-match-${index}`}
+                      property={property}
+                    />
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
-        ))}
+          )
+        })}
       </div>
 
       {/* Edit Modal */}

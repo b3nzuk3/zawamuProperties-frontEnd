@@ -94,7 +94,7 @@ Public listings, featured cards and details share sale/rental pricing, discount 
 
 Browse supports All / For Sale / For Rent, independent property type, free-text location, and optional minimum/maximum effective-price amounts. Empty price bounds are unbounded, including sale listings above KSh 20 million. Sold/Rented listings stay visible; Land hides bedroom/bathroom statistics. Viewing controls are disabled for unavailable listings. A stale page receiving HTTP 409 preserves the form and blocks repeat submission for that listing while retaining a Contact link.
 
-WhatsApp links use the shared company destination `254711168716` and include the listing title and public URL on the current site origin. They open a chat draft only; the application does not automatically send messages. General contact remains available; real contact submission/email and property enquiry forms are Phase E. Saved-search/alert contract alignment is Phase F; unsupported new browse criteria must not be silently saved as a different search.
+WhatsApp links use the shared company destination `254711168716` and include the listing title and public URL on the current site origin. They open a chat draft only; the application does not automatically send messages. Phase E implements real contact submission/email and property enquiry forms; Phase F aligns saved-search/alert criteria. Unsupported criteria fail closed rather than silently saving a different search.
 
 Each phase remains a separate approval checkpoint, not launch approval. Backend-only `ADMIN_EMAILS`, the notification recipient and mail configuration remain rollout gates.
 
@@ -107,7 +107,19 @@ Each phase remains a separate approval checkpoint, not launch approval. Backend-
 
 This frontend assumes the Phase E backend contract: `POST /contact` returns `{ message: "Your enquiry has been received.", received: true }`; owner `GET /contact` returns `{ items, total, page, limit, pages }`; owner detail/status/retry endpoints return an enquiry DTO. The notification recipient and SMTP/owner rollout configuration remain backend operational gates.
 
-## How can I deploy this project?
+## Phase F: saved searches and result replay
+
+Listings can save free-text location, optional For Sale/For Rent purpose, canonical property types and effective discounted-price bounds alongside search term and bedroom/bathroom constraints. Summaries identify monthly rent and preserve zero/cents bounds. Saved search View Results replays these criteria through `/listings?search=<encoded JSON>`; Clear All Filters explicitly removes replay constraints. Existing structured county/constituency/ward and hidden maximum bedroom/bathroom bounds remain active and visible in the retained-criteria summary, not silently discarded.
+
+Historical `apartment`, `land` and `office` types map only to Apartment, Land and Office space. `house`/`commercial` are labelled exact legacy types rather than inferred categories. Old structured-location searches do not match a manually located property missing the required structured fields. County `all` is the historical no-county-filter sentinel; retained constituency/ward constraints still apply. Malformed/unsupported replay criteria show an error and no results, with save/replay actions disabled until explicitly cleared; no broad fallback search is substituted.
+
+The saved-search manager's matching previews use the shared price, location and availability components. Saved browse matches may include Sold/Rented listings; only available listings qualify for new-property email alerts. The backend matcher and alert sender remain authoritative. UI/API test responses are mocks unless the acceptance report explicitly records disposable Mongo/HTTP/browser execution.
+
+## Deployment authorization
+
+Use `DEPLOYMENT_CHECKLIST.md` as the current coordinated release/rollback checklist; historical viewing-only instructions are not release approval. Phase F covers final local verification only. Pushing, deployment, production writes and real message delivery require separate approval. Release the compatible backend before the frontend, preserve legacy location metadata and stored enquiries, and do not introduce migration/backfill/catalog seeding jobs.
+
+Launch still requires an approved business enquiry recipient (TBD), working backend SMTP sender/credentials, existing owner accounts in backend-only `ADMIN_EMAILS`, trusted backend `FRONTEND_URL`, correct frontend `VITE_API_URL` including `/api`, and validated proxy/shared rate-limit configuration. Controlled mail fixtures are not real-provider delivery evidence. Saved-search user/email/ID routes retain a documented public privacy/ownership gap; matching alignment does not fix it or authorize enabling bulk alerts. The owner-only backend alert trigger is not an automatic scheduler, and saved alert frequencies are not a delivery guarantee. Remaining baseline typing/lint/dependency risks must stay visible in the acceptance report.
 
 You can deploy this project using your preferred hosting provider (e.g., Vercel, Netlify, etc.).
 

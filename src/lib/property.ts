@@ -62,8 +62,11 @@ export function getPropertyLocation(property: Property): string {
 
 /** The API projection is authoritative; older responses use the same decimal rule. */
 export function getPropertyEffectivePrice(property: Property): number | null {
-  if (typeof property.effectivePrice === 'number' && Number.isFinite(property.effectivePrice) && property.effectivePrice >= 0) {
-    return property.effectivePrice
+  // A present invalid/null API projection is authoritative, not a request to
+  // invent a price. Only old responses without the projection use fallback.
+  if (property.effectivePrice !== undefined) {
+    return typeof property.effectivePrice === 'number' && Number.isFinite(property.effectivePrice) && property.effectivePrice >= 0
+      ? property.effectivePrice : null
   }
   return calculateEffectivePrice(property.price, property.offerPercent ?? 0)
 }
