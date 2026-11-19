@@ -56,7 +56,7 @@ This project is built with:
 
 ## Phase A: owner-aware admin access and tests
 
-Read `AGENTS.md`, `handoff.md`, and `docs/phase-a-baseline.md`. Phase A is a checkpoint; do not start Phase B before user approval.
+Read `AGENTS.md`, `handoff.md`, and the phase acceptance documents in `docs/`. Work proceeds through separate verify/review/commit/approval checkpoints; do not infer authorization for later phases from historical status below.
 
 Use npm with the committed package lock:
 
@@ -74,7 +74,21 @@ Configure `VITE_API_URL` with the backend base including `/api`. Backend login a
 
 Anonymous admin navigation goes to sign-in; ordinary accounts cannot mount admin pages and go to their dashboard; owners can enter admin routes. Session restoration must not resurrect an earlier account after logout or a newer login.
 
-No Phase B–F rental/feature/contact/discount work or production deployment is included in this checkpoint.
+Phase A evidence does not establish acceptance of later product phases or production deployment.
+
+## Phase C: owner property workflow
+
+The create and edit flows share property fields and use the Phase B backend contract:
+
+- Purpose and property type are independent. Monthly rentals support Apartment, Bungalow, Townhouse, and Land; sales also retain Maisonette and Office space.
+- The owner enters a free-text location. Editing retains existing structured location metadata rather than erasing it.
+- Availability must match the purpose: Available/Sold for sales, Available/Rented for rentals. Changing purpose on an unavailable listing requires a compatible availability choice.
+- Price is the undiscounted sale price or monthly rent. Offers accept 0–99.99 percent with at most two decimals. A live preview is advisory; the saved API response is authoritative.
+- Land does not require bedrooms or bathrooms. Existing image upload handling and the ten-image limit remain.
+- Features load from public `GET /features`; owner-only `POST /features` creates or reuses a whitespace/case-normalized name. Existing property feature snapshots remain selectable even if absent from the catalog. Removing a selection never deletes the shared feature. There is no migration or automatic catalog seeding.
+- Property writes use explicit editable fields, not a spread of API response metadata. On errors the editor retains inputs; conflicts require reloading before retrying. The management table uses the server's saved response.
+
+Public rental filters/pricing/status labels, viewing availability enforcement and WhatsApp are Phase D; real enquiry delivery/inbox and saved-search alignment are later phases. The Phase C checkpoint is not launch approval. Backend-only `ADMIN_EMAILS`, the notification recipient and mail configuration remain rollout gates.
 
 ## How can I deploy this project?
 

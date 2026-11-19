@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Layout from '@/components/layout/Layout'
 import {
@@ -16,10 +16,10 @@ import {
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { LocationSelector } from '@/components/ui/location-selector'
+import { PropertyFields } from '@/components/properties/PropertyFields'
 import api from '@/lib/api'
+import type { PropertyFormValues } from '@/types/property'
+import { buildPropertyPayload, createPropertyForm, validatePropertyForm } from '@/lib/property'
 import MdEditor from 'react-markdown-editor-lite'
 import MarkdownIt from 'markdown-it'
 import 'react-markdown-editor-lite/lib/index.css'
@@ -38,6 +38,22 @@ function formatChange(pct: number) {
 
 const mdParser = new MarkdownIt()
 
+type PropertyApiError = {
+  response?: {
+    status?: number
+    data?: { message?: string; error?: string }
+  }
+}
+
+function getPropertySaveError(error: unknown, fallback: string) {
+  if (typeof error !== 'object' || error === null) return fallback
+  const apiError = error as PropertyApiError
+  if (apiError.response?.status === 409) {
+    return 'This property changed while you were editing it. Reload the listing and try again.'
+  }
+  return apiError.response?.data?.error || apiError.response?.data?.message || fallback
+}
+
 export default function Admin() {
   const [showAddModal, setShowAddModal] = useState(false)
   const [statsCards, setStatsCards] = useState<StatCard[]>([])
@@ -51,26 +67,12 @@ export default function Admin() {
   const [loadingDash, setLoadingDash] = useState(true)
   const [checkingAlerts, setCheckingAlerts] = useState(false)
   const [dashError, setDashError] = useState<string | null>(null)
-  const [form, setForm] = useState({
-    title: '',
-    description: '',
-    price: '',
-    location: '',
-    county: '',
-    constituency: '',
-    ward: '',
-    coordinates: null as [number, number] | null,
-    type: 'Maisonette',
-    bedrooms: '',
-    bathrooms: '',
-    area: '',
-    featured: false,
-    images: [], // This will now only store final uploaded URLs
-    features: [] as string[], // Added features state
-  })
+  const [form, setForm] = useState<PropertyFormValues>(createPropertyForm)
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [previews, setPreviews] = useState<string[]>([])
   const [uploading, setUploading] = useState(false)
+  const [featureSaving, setFeatureSaving] = useState(false)
+  const featureSavingRef = useRef(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [postModal, setPostModal] = useState(false)
@@ -89,28 +91,53 @@ export default function Admin() {
   const [postError, setPostError] = useState('')
   const [contentTab, setContentTab] = useState<'edit' | 'preview'>('edit')
 
-  const handleInput = (e: any) => {
-    const { name, value, type, checked } = e.target
-    setForm((f) => ({ ...f, [name]: type === 'checkbox' ? checked : value }))
-  }
+  const loadDashboard = useCallback(async () => {
+    setLoadingDash(true)
+    setDashError(null)
+    try {
+      const [statsRes, activityRes] = await Promise.all([
+        api.get('/admin/stats'),
+        api.get('/admin/recent-activity'),
+      ])
+      const stats = statsRes.data
+      const cards: StatCard[] = [
+        {
+          title: 'Total Properties',
+          value: stats.totals.properties,
+          change: `${formatChange(stats.monthOverMonth.properties)} from last month`,
+          icon: Home,
+        },
+        {
+          title: 'Active Listings',
+          value: stats.totals.activeListings,
+          change: `${formatChange(stats.monthOverMonth.activeListings)} from last month`,
+          icon: TrendingUp,
+        },
+        {
+          title: 'Blog Posts',
+          value: stats.totals.blogPosts,
+          change: `${formatChange(stats.monthOverMonth.blogPosts)} from last month`,
+          icon: FileText,
+        },
+        {
+          title: 'Inquiries',
+          value: stats.totals.inquiries,
+          change: `${formatChange(stats.monthOverMonth.inquiries)} from last month`,
+          icon: BarChart3,
+        },
+      ]
+      setStatsCards(cards)
+      setRecent(activityRes.data)
+    } catch {
+      setDashError('Failed to load dashboard data')
+    } finally {
+      setLoadingDash(false)
+    }
+  }, [])
 
-  const handleLocationChange = (location: {
-    county: string
-    constituency: string
-    ward: string
-    coordinates?: [number, number]
-  }) => {
-    setForm((f) => ({
-      ...f,
-      county: location.county,
-      constituency: location.constituency,
-      ward: location.ward,
-      coordinates: location.coordinates || null,
-      location: `${location.ward}, ${location.constituency}, ${location.county}`, // Keep backward compatibility
-    }))
-  }
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (uploading || featureSavingRef.current) return
     if (e.target.files) {
       const files = Array.from(e.target.files).slice(
         0,
@@ -130,19 +157,37 @@ export default function Admin() {
   }
 
   const removeSelectedImage = (index: number) => {
+    if (uploading || featureSavingRef.current) return
     setSelectedFiles((prev) => prev.filter((_, i) => i !== index))
     setPreviews((prev) => prev.filter((_, i) => i !== index))
   }
 
-  const handleSubmit = async (e: any) => {
+  const handleFeatureBusyChange = (busy: boolean) => {
+    featureSavingRef.current = busy
+    setFeatureSaving(busy)
+  }
+
+  const closeAddModal = () => {
+    if (featureSavingRef.current || uploading) return
+    setShowAddModal(false)
+  }
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    if (featureSavingRef.current) return
     setError(null)
     setSuccess(null)
+    const validationError = validatePropertyForm(form)
+    if (validationError) {
+      setError(validationError)
+      return
+    }
+
     setUploading(true)
 
     try {
       // First, upload images if any are selected
-      let imageUrls = []
+      let imageUrls: string[] = []
       if (selectedFiles.length > 0) {
         const formData = new FormData()
         selectedFiles.forEach((file) => formData.append('images', file))
@@ -152,46 +197,16 @@ export default function Admin() {
         imageUrls = uploadRes.data.urls
       }
 
-      // Then create the property with all image URLs
-      await api.post('/properties', {
-        ...form,
-        price: Number(form.price) || 0,
-        bedrooms: form.bedrooms ? Number(form.bedrooms) : 0,
-        bathrooms: form.bathrooms ? Number(form.bathrooms) : 0,
-        area: form.area ? Number(form.area) : 0,
-        images: imageUrls,
-        // Include structured location data
-        county: form.county,
-        constituency: form.constituency,
-        ward: form.ward,
-        coordinates: form.coordinates,
-      })
+      await api.post('/properties', buildPropertyPayload(form, imageUrls))
 
       setSuccess('Property added successfully!')
       setShowAddModal(false)
-      // Reset form
-      setForm({
-        title: '',
-        description: '',
-        price: '',
-        location: '',
-        county: '',
-        constituency: '',
-        ward: '',
-        coordinates: null,
-        type: 'Maisonette',
-        bedrooms: '',
-        bathrooms: '',
-        area: '',
-        featured: false,
-        images: [],
-        features: [],
-      })
+      setForm(createPropertyForm())
       setSelectedFiles([])
       setPreviews([])
-      // Optionally, refresh property list here
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to add property')
+      await loadDashboard()
+    } catch (err: unknown) {
+      setError(getPropertySaveError(err, 'Failed to add property'))
     } finally {
       setUploading(false)
     }
@@ -280,62 +295,9 @@ export default function Admin() {
     }
   }
 
-  const allFeatures = ['Pool', 'Garage', 'Garden', 'Gym', 'Fireplace']
-
   useEffect(() => {
-    async function loadDashboard() {
-      setLoadingDash(true)
-      setDashError(null)
-      try {
-        const [statsRes, activityRes] = await Promise.all([
-          api.get('/admin/stats'),
-          api.get('/admin/recent-activity'),
-        ])
-        const s = statsRes.data
-        const cards: StatCard[] = [
-          {
-            title: 'Total Properties',
-            value: s.totals.properties,
-            change: `${formatChange(
-              s.monthOverMonth.properties
-            )} from last month`,
-            icon: Home,
-          },
-          {
-            title: 'Active Listings',
-            value: s.totals.activeListings,
-            change: `${formatChange(
-              s.monthOverMonth.activeListings
-            )} from last month`,
-            icon: TrendingUp,
-          },
-          {
-            title: 'Blog Posts',
-            value: s.totals.blogPosts,
-            change: `${formatChange(
-              s.monthOverMonth.blogPosts
-            )} from last month`,
-            icon: FileText,
-          },
-          {
-            title: 'Inquiries',
-            value: s.totals.inquiries,
-            change: `${formatChange(
-              s.monthOverMonth.inquiries
-            )} from last month`,
-            icon: BarChart3,
-          },
-        ]
-        setStatsCards(cards)
-        setRecent(activityRes.data)
-      } catch (err: any) {
-        setDashError('Failed to load dashboard data')
-      } finally {
-        setLoadingDash(false)
-      }
-    }
-    loadDashboard()
-  }, [])
+    void loadDashboard()
+  }, [loadDashboard])
 
   return (
     <Layout>
@@ -360,6 +322,11 @@ export default function Admin() {
               </Button>
             </div>
           </div>
+          {success && (
+            <p role="status" className="mb-6 text-green-700">
+              {success}
+            </p>
+          )}
 
           {/* Add Property Modal */}
           {showAddModal && (
@@ -370,8 +337,10 @@ export default function Admin() {
               >
                 <button
                   type="button"
+                  aria-label="Close Add Property form"
                   className="absolute top-4 right-4 z-10"
-                  onClick={() => setShowAddModal(false)}
+                  disabled={uploading || featureSaving}
+                  onClick={closeAddModal}
                 >
                   <X />
                 </button>
@@ -387,167 +356,23 @@ export default function Admin() {
 
                 <div className="flex-1 overflow-y-auto px-6">
                   <div className="space-y-4 pb-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-1">
-                        Title
-                      </label>
-                      <Input
-                        name="title"
-                        value={form.title}
-                        onChange={handleInput}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">
-                        Description
-                      </label>
-                      <Textarea
-                        name="description"
-                        value={form.description}
-                        onChange={handleInput}
-                        required
-                      />
-                    </div>
-                    <div className="flex gap-2">
-                      <div className="flex-1">
-                        <label className="block text-sm font-medium mb-1">
-                          Price
-                        </label>
-                        <Input
-                          name="price"
-                          type="number"
-                          value={form.price}
-                          onChange={handleInput}
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    {/* Location Selector */}
-                    <LocationSelector
-                      onLocationChange={handleLocationChange}
-                      initialLocation={{
-                        county: form.county,
-                        constituency: form.constituency,
-                        ward: form.ward,
-                      }}
+                    <PropertyFields
+                      value={form}
+                      onChange={setForm}
+                      onFeatureBusyChange={handleFeatureBusyChange}
+                      disabled={uploading || featureSaving}
                     />
-                    <div className="flex gap-2">
-                      <div className="flex-1">
-                        <label className="block text-sm font-medium mb-1">
-                          Type
-                        </label>
-                        <select
-                          name="type"
-                          value={form.type}
-                          onChange={handleInput}
-                          className="w-full border rounded-md px-2 py-2"
-                        >
-                          <option>Maisonette</option>
-                          <option>Apartment</option>
-                          <option>Bungalow</option>
-                          <option>Townhouse</option>
-                          <option>Land</option>
-                          <option>Office space</option>
-                        </select>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        id="featured"
-                        name="featured"
-                        checked={form.featured}
-                        onChange={handleInput}
-                        className="h-4 w-4"
-                      />
-                      <label htmlFor="featured" className="text-sm font-medium">
-                        Mark as Featured
-                      </label>
-                    </div>
-                    <div className="flex gap-2">
-                      <div className="flex-1">
-                        <label className="block text-sm font-medium mb-1">
-                          Bedrooms
-                        </label>
-                        <Input
-                          name="bedrooms"
-                          type="number"
-                          value={form.bedrooms}
-                          onChange={handleInput}
-                          required
-                        />
-                      </div>
-                      <div className="flex-1">
-                        <label className="block text-sm font-medium mb-1">
-                          Bathrooms
-                        </label>
-                        <Input
-                          name="bathrooms"
-                          type="number"
-                          value={form.bathrooms}
-                          onChange={handleInput}
-                          required
-                        />
-                      </div>
-                      <div className="flex-1">
-                        <label className="block text-sm font-medium mb-1">
-                          Area (sqft)
-                        </label>
-                        <Input
-                          name="area"
-                          type="number"
-                          value={form.area}
-                          onChange={handleInput}
-                          required
-                        />
-                      </div>
-                    </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">
-                        Features
-                      </label>
-                      <div className="flex flex-wrap gap-2">
-                        {allFeatures.map((feature) => (
-                          <label
-                            key={feature}
-                            className="flex items-center space-x-2"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={form.features.includes(feature)}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setForm((prev) => ({
-                                    ...prev,
-                                    features: [...prev.features, feature],
-                                  }))
-                                } else {
-                                  setForm((prev) => ({
-                                    ...prev,
-                                    features: prev.features.filter(
-                                      (f) => f !== feature
-                                    ),
-                                  }))
-                                }
-                              }}
-                            />
-                            <span>{feature}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">
+                      <label htmlFor="add-property-images" className="block text-sm font-medium mb-1">
                         Images (max 10)
                       </label>
                       <input
+                        id="add-property-images"
                         type="file"
                         accept="image/*"
                         multiple
                         onChange={handleImageChange}
-                        disabled={selectedFiles.length >= 10}
+                        disabled={uploading || featureSaving || selectedFiles.length >= 10}
                       />
 
                       {/* Selected files preview */}
@@ -566,6 +391,8 @@ export default function Admin() {
                                 />
                                 <button
                                   type="button"
+                                  disabled={uploading || featureSaving}
+                                  aria-label={`Remove selected image ${idx + 1}`}
                                   onClick={() => removeSelectedImage(idx)}
                                   className="absolute top-1 right-1 p-1 bg-red-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                                 >
@@ -581,8 +408,16 @@ export default function Admin() {
                 </div>
 
                 {/* Fixed Submit Button */}
-                <div className="p-6 pt-4 border-t bg-gray-50 rounded-b-xl">
-                  <Button type="submit" className="w-full" disabled={uploading}>
+                <div className="flex gap-2 p-6 pt-4 border-t bg-gray-50 rounded-b-xl">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={closeAddModal}
+                    disabled={uploading || featureSaving}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit" className="flex-1" disabled={uploading || featureSaving}>
                     {uploading ? 'Adding Property...' : 'Add Property'}
                   </Button>
                 </div>
