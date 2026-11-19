@@ -54,6 +54,28 @@ This project is built with:
 - shadcn-ui
 - Tailwind CSS
 
+## Phase A: owner-aware admin access and tests
+
+Read `AGENTS.md`, `handoff.md`, and `docs/phase-a-baseline.md`. Phase A is a checkpoint; do not start Phase B before user approval.
+
+Use npm with the committed package lock:
+
+```sh
+npm ci
+npm test -- --run
+npm run typecheck
+npm run lint
+npm run build
+```
+
+`typecheck` checks the application and Node/Vite configuration, rather than only the empty solution config. Baseline application typing/lint errors are documented separately; do not suppress them or report a clean repository-wide gate without proof. Vitest/React Testing Library fixtures are simulated UI/API responses, not evidence of production authentication.
+
+Configure `VITE_API_URL` with the backend base including `/api`. Backend login and profile return `{ id, name, email, isAdmin }`. Only `isAdmin === true` enables owner routes/navigation; missing flags fail closed. This UI is not a security boundary: the backend independently checks its current persisted account against backend-only `ADMIN_EMAILS` on each protected request. Never put that allowlist in a `VITE_` variable.
+
+Anonymous admin navigation goes to sign-in; ordinary accounts cannot mount admin pages and go to their dashboard; owners can enter admin routes. Session restoration must not resurrect an earlier account after logout or a newer login.
+
+No Phase B–F rental/feature/contact/discount work or production deployment is included in this checkpoint.
+
 ## How can I deploy this project?
 
 You can deploy this project using your preferred hosting provider (e.g., Vercel, Netlify, etc.).

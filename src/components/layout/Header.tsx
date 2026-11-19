@@ -13,6 +13,7 @@ import {
   Calculator,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useAuth } from '@/hooks/useAuth'
 import { cn } from '@/lib/utils'
 
 const navigation = [
@@ -30,6 +31,10 @@ export default function Header() {
   const [isHidden, setIsHidden] = useState(false)
   const [lastScrollY, setLastScrollY] = useState(0)
   const location = useLocation()
+  const { user, loading } = useAuth()
+  const authLink = !loading && (user?.isAdmin === true
+    ? { href: '/admin', label: 'Admin' }
+    : !user ? { href: '/login', label: 'Sign In' } : null)
 
   const isActivePage = (href: string) => {
     if (href === '/') {
@@ -102,11 +107,11 @@ export default function Header() {
             <Button variant="ghost" size="sm">
               <Search className="h-4 w-4" />
             </Button>
-            <Link to="/admin">
+            {authLink && <Link to={authLink.href}>
               <Button variant="outline" size="sm">
-                Admin
+                {authLink.label}
               </Button>
-            </Link>
+            </Link>}
           </div>
 
           {/* Mobile menu button */}
@@ -114,6 +119,8 @@ export default function Header() {
             <Button
               variant="ghost"
               size="sm"
+              aria-label="Toggle navigation"
+              aria-expanded={mobileMenuOpen}
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
               {mobileMenuOpen ? (
@@ -148,16 +155,16 @@ export default function Header() {
                   </Link>
                 )
               })}
-              <div className="pt-4 border-t border-border">
+              {authLink && <div className="pt-4 border-t border-border">
                 <Link
-                  to="/admin"
+                  to={authLink.href}
                   onClick={() => setMobileMenuOpen(false)}
                   className="flex items-center space-x-2 px-4 py-3 rounded-lg text-base font-medium text-muted-foreground hover:text-foreground hover:bg-secondary"
                 >
                   <User className="h-5 w-5" />
-                  <span>Admin</span>
+                  <span>{authLink.label}</span>
                 </Link>
-              </div>
+              </div>}
             </div>
           </div>
         )}

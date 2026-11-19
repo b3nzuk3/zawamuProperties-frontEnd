@@ -1,3 +1,4 @@
+import { isAxiosError } from 'axios'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
@@ -18,10 +19,10 @@ export default function Login() {
     setLoading(true)
     setError(null)
     try {
-      await login(email, password)
-      navigate('/admin')
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Login failed')
+      const user = await login(email, password)
+      navigate(user.isAdmin === true ? '/admin' : '/dashboard')
+    } catch (err: unknown) {
+      setError((isAxiosError<{ message?: string }>(err) && err.response?.data?.message) || 'Login failed')
     } finally {
       setLoading(false)
     }
@@ -35,7 +36,7 @@ export default function Login() {
           className="w-full max-w-md space-y-6 bg-card p-8 rounded-xl shadow-card"
         >
           <h1 className="font-heading text-2xl font-bold mb-4 text-center">
-            Admin Login
+            Sign In
           </h1>
           {error && <div className="text-red-500 text-center">{error}</div>}
           <div>
