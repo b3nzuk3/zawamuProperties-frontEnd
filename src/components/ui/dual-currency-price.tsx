@@ -10,6 +10,22 @@ interface DualCurrencyPriceProps {
   showRefresh?: boolean
 }
 
+function formatKesAmount(amount: number): string {
+  const hasFractionalCents = !Number.isInteger(amount)
+  const formatted = amount.toLocaleString('en-US', {
+    minimumFractionDigits: hasFractionalCents ? 2 : 0,
+    maximumFractionDigits: 2,
+  })
+  return `KSh ${formatted}`
+}
+
+function formatUsdAmount(amount: number): string {
+  return `$${amount.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`
+}
+
 export function DualCurrencyPrice({
   price,
   originalCurrency,
@@ -19,8 +35,6 @@ export function DualCurrencyPrice({
   const {
     usdToKes,
     kesToUsd,
-    formatUsd,
-    formatKes,
     loading,
     error,
     refreshRates,
@@ -33,7 +47,7 @@ export function DualCurrencyPrice({
     <div className={`space-y-1 ${className}`}>
       {/* Primary Currency (Original) */}
       <div className="font-heading font-bold text-2xl lg:text-3xl text-accent">
-        {originalCurrency === 'USD' ? formatUsd(usdPrice) : formatKes(kesPrice)}
+        {originalCurrency === 'USD' ? formatUsdAmount(usdPrice) : formatKesAmount(kesPrice)}
       </div>
 
       {/* Secondary Currency (Converted) */}
@@ -41,8 +55,8 @@ export function DualCurrencyPrice({
         <div className="text-sm text-muted-foreground">
           ≈{' '}
           {originalCurrency === 'USD'
-            ? formatKes(kesPrice)
-            : formatUsd(usdPrice)}
+            ? formatKesAmount(kesPrice)
+            : formatUsdAmount(usdPrice)}
         </div>
         {showRefresh && (
           <button

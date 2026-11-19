@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Calendar, Clock, User, Mail, Phone, MessageSquare } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -35,6 +36,10 @@ export function ScheduleViewingModal({
 }: ScheduleViewingModalProps) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [unavailablePropertyIds, setUnavailablePropertyIds] = useState<Set<string>>(() => new Set())
+  const unavailablePropertyIdsRef = useRef(new Set<string>())
+  const submitInFlight = useRef(false)
+  const propertyUnavailable = unavailablePropertyIds.has(propertyId)
   const { toast } = useToast()
 
   const [formData, setFormData] = useState({
@@ -61,6 +66,9 @@ export function ScheduleViewingModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (submitInFlight.current || unavailablePropertyIdsRef.current.has(propertyId)) return
+
+    submitInFlight.current = true
     setLoading(true)
 
     try {
@@ -86,12 +94,22 @@ export function ScheduleViewingModal({
         message: '',
       })
     } catch (error) {
+      const status = (error as { response?: { status?: number } } | null)?.response?.status
+      if (status === 409) {
+        const blockedPropertyIds = new Set(unavailablePropertyIdsRef.current)
+        blockedPropertyIds.add(propertyId)
+        unavailablePropertyIdsRef.current = blockedPropertyIds
+        setUnavailablePropertyIds(blockedPropertyIds)
+        return
+      }
+
       toast({
         title: 'Error',
         description: 'Failed to submit viewing request. Please try again.',
         variant: 'destructive',
       })
     } finally {
+      submitInFlight.current = false
       setLoading(false)
     }
   }
@@ -115,6 +133,21 @@ export function ScheduleViewingModal({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {propertyUnavailable && (
+            <div
+              role="alert"
+              className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-text-main"
+            >
+              <p className="font-medium">This property is no longer available for viewings.</p>
+              <p className="mt-1 text-text-muted">
+                You can still contact us to make an enquiry.
+              </p>
+              <Link to="/contact" className="mt-2 inline-block font-medium text-primary underline">
+                Contact us to enquire
+              </Link>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="name" className="flex items-center gap-2">
@@ -225,7 +258,7 @@ export function ScheduleViewingModal({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading || propertyUnavailable}>
               {loading ? 'Submitting...' : 'Schedule Viewing'}
             </Button>
           </div>

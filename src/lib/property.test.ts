@@ -5,10 +5,34 @@ import {
   createPropertyForm,
   propertyToForm,
   validatePropertyForm,
+  getPropertyLocation,
+  getPropertyEffectivePrice,
+  isPropertyAvailable,
 } from './property'
 import type { Property } from '@/types/property'
 
 describe('property form helpers', () => {
+  const publicProperty: Property = { title: 'Home', description: '', price: 100, location: ' Custom place ', type: 'Apartment', county: 'Old county', ward: 'Old ward' }
+
+  it('prefers manual public location and falls back without modifying legacy data', () => {
+    expect(getPropertyLocation(publicProperty)).toBe('Custom place')
+    expect(getPropertyLocation({ ...publicProperty, location: ' ' })).toBe('Old ward, Old county')
+    expect(publicProperty.location).toBe(' Custom place ')
+  })
+
+  it('uses authoritative public effective price and calculates only for missing projections', () => {
+    expect(getPropertyEffectivePrice({ ...publicProperty, effectivePrice: 75, offerPercent: 10 })).toBe(75)
+    expect(getPropertyEffectivePrice({ ...publicProperty, offerPercent: 10 })).toBe(90)
+    expect(getPropertyEffectivePrice({ ...publicProperty, price: 1.01, offerPercent: 50 })).toBe(0.51)
+    expect(getPropertyEffectivePrice({ ...publicProperty, effectivePrice: null, price: -1 })).toBeNull()
+  })
+
+  it('allows legacy availability but does not allow sold or rented viewings', () => {
+    expect(isPropertyAvailable(publicProperty)).toBe(true)
+    expect(isPropertyAvailable({ ...publicProperty, availability: 'available' })).toBe(true)
+    expect(isPropertyAvailable({ ...publicProperty, availability: 'sold' })).toBe(false)
+    expect(isPropertyAvailable({ ...publicProperty, availability: 'rented' })).toBe(false)
+  })
   it('creates a blank sale form with safe defaults and text numeric values', () => {
     const form = createPropertyForm()
 

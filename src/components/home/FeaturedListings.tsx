@@ -6,10 +6,16 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import api from '@/lib/api'
 import { ScheduleViewingModal } from '@/components/ui/schedule-viewing-modal'
-import { DualCurrencyPrice } from '@/components/ui/dual-currency-price'
+import { PropertyBadges } from '@/components/properties/PropertyBadges'
+import { PropertyPrice } from '@/components/properties/PropertyPrice'
+import { WhatsAppButton } from '@/components/properties/WhatsAppButton'
+import { getPropertyLocation, isPropertyAvailable } from '@/lib/property'
+import type { Property } from '@/types/property'
+
+type FeaturedProperty = Property & { id?: string; image?: string }
 
 export default function FeaturedListings() {
-  const [properties, setProperties] = useState([])
+  const [properties, setProperties] = useState<FeaturedProperty[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -17,7 +23,8 @@ export default function FeaturedListings() {
       setLoading(true)
       try {
         const res = await api.get('/properties')
-        setProperties(res.data.filter((p: any) => p.featured))
+        const loadedProperties = res.data as FeaturedProperty[]
+        setProperties(loadedProperties.filter((property) => property.featured))
       } catch (err) {
         setProperties([])
       } finally {
@@ -48,9 +55,10 @@ export default function FeaturedListings() {
           <div className="text-center py-12">Loading...</div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
-            {properties.map((property: any, index: number) => (
+            {properties.map((property, index) => (
               <Card
                 key={property._id || property.id}
+                data-testid="property-card"
                 className={`property-card group overflow-hidden ${
                   index === 0 ? 'listing-fade-in' : ''
                 }`}
@@ -58,26 +66,14 @@ export default function FeaturedListings() {
                 <div className="relative">
                   <img
                     src={
-                      property.images?.[0] ||
-                      property.image ||
-                      '/placeholder.jpg'
+                      property.images?.[0] || property.image || '/placeholder.jpg'
                     }
                     alt={property.title}
                     className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-500"
                   />
-                  <div className="absolute top-4 left-4">
-                    <Badge
-                      variant="secondary"
-                      className="bg-accent text-accent-foreground"
-                    >
-                      Featured
-                    </Badge>
-                  </div>
+                  <PropertyBadges property={property} className="absolute top-4 left-4 max-w-[75%]" />
                   <div className="absolute top-4 right-4">
-                    <Badge
-                      variant="outline"
-                      className="bg-background/90 backdrop-blur-sm"
-                    >
+                    <Badge variant="outline" className="bg-background/90 backdrop-blur-sm">
                       {property.type}
                     </Badge>
                   </div>
@@ -89,29 +85,33 @@ export default function FeaturedListings() {
                     </h3>
                     <div className="flex items-center text-muted-foreground mb-3">
                       <MapPin className="h-4 w-4 mr-1" />
-                      <span className="text-sm">{property.location}</span>
+                      <span className="text-sm">{getPropertyLocation(property)}</span>
                     </div>
-                    <DualCurrencyPrice
-                      price={property.price}
-                      originalCurrency="KES"
-                      className="mb-2"
-                    />
+                    <PropertyPrice property={property} className="mb-2" />
                   </div>
                   <div className="flex items-center justify-between text-sm text-muted-foreground mb-6">
-                    <div className="flex items-center">
-                      <Bed className="h-4 w-4 mr-1" />
-                      <span>{property.bedrooms} Bed</span>
-                    </div>
-                    <div className="flex items-center">
-                      <Bath className="h-4 w-4 mr-1" />
-                      <span>{property.bathrooms} Bath</span>
-                    </div>
+                    {property.type !== 'Land' && (
+                      <>
+                        <div className="flex items-center">
+                          <Bed className="h-4 w-4 mr-1" />
+                          <span>{property.bedrooms ?? 0} Bed</span>
+                        </div>
+                        <div className="flex items-center">
+                          <Bath className="h-4 w-4 mr-1" />
+                          <span>{property.bathrooms ?? 0} Bath</span>
+                        </div>
+                      </>
+                    )}
                     <div className="flex items-center">
                       <Square className="h-4 w-4 mr-1" />
                       <span>{property.area?.toLocaleString()} sqft</span>
                     </div>
                   </div>
                   <div className="space-y-2">
+                    <WhatsAppButton
+                      property={{ ...property, _id: property._id || property.id }}
+                      className="w-full"
+                    />
                     <Link to={`/listings/${property._id || property.id}`}>
                       <Button
                         variant="outline"
@@ -121,18 +121,24 @@ export default function FeaturedListings() {
                         <ArrowRight className="h-4 w-4 ml-2" />
                       </Button>
                     </Link>
-                    <ScheduleViewingModal
-                      propertyId={property._id || property.id}
-                      propertyTitle={property.title}
-                    >
-                      <Button
-                        variant="secondary"
-                        className="w-full hover:bg-accent hover:text-accent-foreground transition-colors"
+                    {isPropertyAvailable(property) ? (
+                      <ScheduleViewingModal
+                        propertyId={property._id || property.id || ''}
+                        propertyTitle={property.title}
                       >
-                        <Calendar className="h-4 w-4 mr-2" />
-                        Schedule Viewing
+                        <Button
+                          variant="secondary"
+                          className="w-full hover:bg-accent hover:text-accent-foreground transition-colors"
+                        >
+                          <Calendar className="h-4 w-4 mr-2" />
+                          Schedule Viewing
+                        </Button>
+                      </ScheduleViewingModal>
+                    ) : (
+                      <Button variant="secondary" className="w-full" disabled>
+                        Viewing unavailable
                       </Button>
-                    </ScheduleViewingModal>
+                    )}
                   </div>
                 </CardContent>
               </Card>

@@ -7,7 +7,8 @@ export interface PropertyFormValues {
   title: string
   description: string
   listingPurpose: PropertyPurpose
-  availability: PropertyAvailability
+  /** Historical invalid values require explicit correction, never reactivation. */
+  availability: PropertyAvailability | 'invalid'
   price: string
   offerPercent: string
   location: string

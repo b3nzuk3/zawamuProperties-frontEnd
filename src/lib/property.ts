@@ -19,7 +19,7 @@ const isAvailability = (value: unknown): value is PropertyAvailability =>
 
 export function isAvailabilityCompatible(
   listingPurpose: PropertyPurpose,
-  availability: PropertyAvailability,
+  availability: PropertyFormValues['availability'],
 ): boolean {
   return availability === 'available' ||
     (listingPurpose === 'sale' && availability === 'sold') ||
@@ -55,6 +55,23 @@ function structuredLocation(property: Property): string {
     .join(', ')
 }
 
+/** Public locations honor the owner's manual value before legacy metadata. */
+export function getPropertyLocation(property: Property): string {
+  return property.location?.trim() || structuredLocation(property)
+}
+
+/** The API projection is authoritative; older responses use the same decimal rule. */
+export function getPropertyEffectivePrice(property: Property): number | null {
+  if (typeof property.effectivePrice === 'number' && Number.isFinite(property.effectivePrice) && property.effectivePrice >= 0) {
+    return property.effectivePrice
+  }
+  return calculateEffectivePrice(property.price, property.offerPercent ?? 0)
+}
+
+export function isPropertyAvailable(property: Property): boolean {
+  return property.availability === undefined || property.availability === 'available'
+}
+
 function numericText(value: number | undefined): string {
   return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? String(value) : '0'
 }
@@ -64,7 +81,8 @@ export function propertyToForm(property: Property): PropertyFormValues {
     title: property.title ?? '',
     description: property.description ?? '',
     listingPurpose: isPurpose(property.listingPurpose) ? property.listingPurpose : 'sale',
-    availability: isAvailability(property.availability) ? property.availability : 'available',
+    availability: property.availability === undefined ? 'available'
+      : isAvailability(property.availability) ? property.availability : 'invalid',
     price: typeof property.price === 'number' && Number.isFinite(property.price) ? String(property.price) : '',
     offerPercent: typeof property.offerPercent === 'number' && Number.isFinite(property.offerPercent)
       ? String(property.offerPercent)
@@ -95,6 +113,7 @@ export function buildPropertyPayload(
   form: PropertyFormValues,
   images: string[],
 ): PropertyWritePayload {
+  if (!isAvailability(form.availability)) throw new Error('Choose a valid availability before saving.')
   const payload: PropertyWritePayload = {
     title: form.title.trim(),
     description: form.description.trim(),

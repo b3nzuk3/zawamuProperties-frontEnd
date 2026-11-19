@@ -4,26 +4,14 @@ import Layout from '@/components/layout/Layout'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { MapPin, Bed, Bath, Square, ArrowLeft, Calendar } from 'lucide-react'
+import { MapPin, Bed, Bath, Square, ArrowLeft, Calendar, Phone } from 'lucide-react'
 import api from '@/lib/api'
 import { ScheduleViewingModal } from '@/components/ui/schedule-viewing-modal'
-import { DualCurrencyPrice } from '@/components/ui/dual-currency-price'
-
-type Property = {
-  _id?: string
-  id?: string
-  title: string
-  description: string
-  price: number
-  location: string
-  type?: string
-  featured?: boolean
-  images?: string[]
-  features?: string[]
-  bedrooms?: number
-  bathrooms?: number
-  area?: number
-}
+import { PropertyPrice } from '@/components/properties/PropertyPrice'
+import { PropertyBadges } from '@/components/properties/PropertyBadges'
+import { WhatsAppButton } from '@/components/properties/WhatsAppButton'
+import { getPropertyLocation, isPropertyAvailable } from '@/lib/property'
+import type { Property } from '@/types/property'
 
 export default function PropertyDetails() {
   const { id } = useParams()
@@ -127,42 +115,54 @@ export default function PropertyDetails() {
                       </h1>
                       <div className="flex items-center text-muted-foreground">
                         <MapPin className="h-4 w-4 mr-1" />
-                        <span>{property.location}</span>
+                        <span>{getPropertyLocation(property)}</span>
                       </div>
                     </div>
-                    {property.featured && (
-                      <Badge className="bg-accent text-accent-foreground">
-                        Featured
-                      </Badge>
-                    )}
+                  </div>
+                  <PropertyBadges property={property} />
+
+                  <PropertyPrice property={property} showRefresh className="mb-4" />
+
+                  {isPropertyAvailable(property) ? (
+                    <ScheduleViewingModal
+                      propertyId={property._id ?? ''}
+                      propertyTitle={property.title}
+                    >
+                      <Button className="w-full mb-3">
+                        <Calendar className="h-4 w-4 mr-2" />
+                        Schedule a Viewing
+                      </Button>
+                    </ScheduleViewingModal>
+                  ) : (
+                    <Button className="w-full mb-3" disabled aria-label="Viewing unavailable">
+                      <Calendar className="h-4 w-4 mr-2" />
+                      Viewing unavailable
+                    </Button>
+                  )}
+
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <Button variant="outline" className="w-full flex-1" asChild>
+                      <Link to="/contact" aria-label="Contact us">
+                        <Phone className="h-4 w-4 mr-2" />
+                        Contact us
+                      </Link>
+                    </Button>
+                    <WhatsAppButton property={property} className="flex-1" />
                   </div>
 
-                  <DualCurrencyPrice
-                    price={property.price}
-                    originalCurrency="KES"
-                    showRefresh={true}
-                    className="mb-4"
-                  />
-
-                  <ScheduleViewingModal
-                    propertyId={property._id || property.id || ''}
-                    propertyTitle={property.title}
-                  >
-                    <Button className="w-full mb-4">
-                      <Calendar className="h-4 w-4 mr-2" />
-                      Schedule a Viewing
-                    </Button>
-                  </ScheduleViewingModal>
-
-                  <div className="grid grid-cols-3 gap-3 text-sm text-muted-foreground">
-                    <div className="flex items-center">
-                      <Bed className="h-4 w-4 mr-1" /> {property.bedrooms ?? 0}{' '}
-                      Bed
-                    </div>
-                    <div className="flex items-center">
-                      <Bath className="h-4 w-4 mr-1" />{' '}
-                      {property.bathrooms ?? 0} Bath
-                    </div>
+                  <div className={`grid ${property.type === 'Land' ? 'grid-cols-1' : 'grid-cols-3'} gap-3 text-sm text-muted-foreground`}>
+                    {property.type !== 'Land' && (
+                      <>
+                        <div className="flex items-center">
+                          <Bed className="h-4 w-4 mr-1" /> {property.bedrooms ?? 0}{' '}
+                          Bed
+                        </div>
+                        <div className="flex items-center">
+                          <Bath className="h-4 w-4 mr-1" />{' '}
+                          {property.bathrooms ?? 0} Bath
+                        </div>
+                      </>
+                    )}
                     <div className="flex items-center">
                       <Square className="h-4 w-4 mr-1" />
                       {(property.area ?? 0).toLocaleString()} sqft

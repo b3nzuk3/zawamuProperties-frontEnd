@@ -57,6 +57,22 @@ beforeEach(() => {
 })
 
 describe('AdminProperties owner editing', () => {
+  it.each([null, '', 'withdrawn'])('requires an explicit availability correction for historical %s before unrelated edits save', async (availability) => {
+    const user = userEvent.setup()
+    vi.mocked(api.get).mockImplementation((url) => Promise.resolve({
+      data: url === '/properties' ? [{ ...legacyProperty, availability }] : featureCatalog,
+    }) as never)
+    render(<AdminProperties />)
+    await user.click(await screen.findByRole('button', { name: 'Edit' }))
+    await user.type(screen.getByLabelText('Title'), ' edited')
+    expect(screen.getByLabelText('Availability')).not.toHaveValue('available')
+    await user.click(screen.getByRole('button', { name: 'Save Changes' }))
+    expect(api.put).not.toHaveBeenCalled()
+    await user.selectOptions(screen.getByLabelText('Availability'), 'rented')
+    await user.click(screen.getByRole('button', { name: 'Save Changes' }))
+    await waitFor(() => expect(api.put).toHaveBeenCalledTimes(1))
+    expect(vi.mocked(api.put).mock.calls[0][1]).toMatchObject({ availability: 'rented' })
+  })
   it('shows purpose, availability, and base/effective monthly prices in the table', async () => {
     render(<AdminProperties />)
 

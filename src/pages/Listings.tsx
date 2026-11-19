@@ -7,14 +7,12 @@ import {
   Bed,
   Bath,
   Square,
-  Heart,
   Grid,
   List,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import {
   Select,
   SelectContent,
@@ -22,28 +20,42 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Slider } from '@/components/ui/slider'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Link, useNavigate } from 'react-router-dom'
 import api from '@/lib/api'
 import { ScheduleViewingModal } from '@/components/ui/schedule-viewing-modal'
-import { LocationSelector } from '@/components/ui/location-selector'
 import { SaveSearchModal } from '@/components/ui/save-search-modal'
-import { DualCurrencyPrice } from '@/components/ui/dual-currency-price'
+import { PropertyBadges } from '@/components/properties/PropertyBadges'
+import { PropertyPrice } from '@/components/properties/PropertyPrice'
+import { WhatsAppButton } from '@/components/properties/WhatsAppButton'
+import {
+  getPropertyEffectivePrice,
+  getPropertyLocation,
+  isPropertyAvailable,
+  SALE_PROPERTY_TYPES,
+} from '@/lib/property'
+import type { Property } from '@/types/property'
+
+type ListingProperty = Property & { id?: string; image?: string }
+type PurposeFilter = 'all' | 'sale' | 'rent'
+
+function parsePriceFilter(value: string): number | null {
+  if (!value.trim()) return null
+  const parsed = Number(value)
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : null
+}
 
 export default function Listings() {
   const navigate = useNavigate()
-  const [properties, setProperties] = useState<any[]>([])
+  const [properties, setProperties] = useState<ListingProperty[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
-  const [selectedLocation, setSelectedLocation] = useState({
-    county: 'all',
-    constituency: '',
-    ward: '',
-  })
+  const [locationFilter, setLocationFilter] = useState('')
+  const [purposeFilter, setPurposeFilter] = useState<PurposeFilter>('all')
   const [selectedTypes, setSelectedTypes] = useState<string[]>([])
-  const [priceRange, setPriceRange] = useState([0, 20000000])
+  const [minPrice, setMinPrice] = useState('')
+  const [maxPrice, setMaxPrice] = useState('')
   const [minBedrooms, setMinBedrooms] = useState('any')
   const [minBathrooms, setMinBathrooms] = useState('any')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
@@ -54,142 +66,106 @@ export default function Listings() {
     api
       .get('/properties')
       .then((res) => setProperties(res.data))
-      .catch((err) => setError('Failed to load properties'))
+      .catch(() => setError('Failed to load properties'))
       .finally(() => setLoading(false))
   }, [])
 
-  // Simple price formatter for price range display
-  const formatPrice = (price: number) => {
-    return `KSh ${price.toLocaleString('en-US', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    })}`
-  }
+  const minimumPrice = parsePriceFilter(minPrice)
+  const maximumPrice = parsePriceFilter(maxPrice)
 
-  // Filter properties based on search criteria
   const filteredProperties = properties.filter((property) => {
-    // Search term filter
-    if (searchTerm) {
-      const searchLower = searchTerm.toLowerCase()
-      const locationText =
-        property.ward && property.constituency && property.county
-          ? `${property.ward}, ${property.constituency}, ${property.county}`.toLowerCase()
-          : property.location.toLowerCase()
-
-      const matchesSearch =
-        property.title.toLowerCase().includes(searchLower) ||
-        locationText.includes(searchLower) ||
-        property.description.toLowerCase().includes(searchLower)
-      if (!matchesSearch) return false
+    const normalizedSearch = searchTerm.trim().toLowerCase()
+    if (normalizedSearch) {
+      const searchableText = [
+        property.title,
+        getPropertyLocation(property),
+        property.description,
+      ].join(' ').toLowerCase()
+      if (!searchableText.includes(normalizedSearch)) return false
     }
 
-    // Location filter - check county, constituency, or ward
-    if (selectedLocation.county && selectedLocation.county !== 'all') {
-      let matchesLocation = false
-
-      // If ward is selected, match by ward
-      if (selectedLocation.ward && property.ward) {
-        matchesLocation =
-          property.ward.toLowerCase() === selectedLocation.ward.toLowerCase()
-      }
-      // If constituency is selected (but no ward), match by constituency
-      else if (selectedLocation.constituency && property.constituency) {
-        matchesLocation =
-          property.constituency.toLowerCase() ===
-          selectedLocation.constituency.toLowerCase()
-      }
-      // If only county is selected, match by county
-      else if (selectedLocation.county && property.county) {
-        matchesLocation =
-          property.county.toLowerCase() ===
-          selectedLocation.county.toLowerCase()
-      }
-
-      if (!matchesLocation) return false
-    }
-
-    // Property type filter
-    if (selectedTypes.length > 0) {
-      if (!selectedTypes.includes(property.type)) {
-        return false
-      }
-    }
-
-    // Price range filter
-    if (property.price < priceRange[0] || property.price > priceRange[1]) {
+    const normalizedLocation = locationFilter.trim().toLowerCase()
+    if (normalizedLocation && !getPropertyLocation(property).toLowerCase().includes(normalizedLocation)) {
       return false
     }
 
-    // Bedrooms filter
-    if (minBedrooms !== 'any') {
-      const minBeds = parseInt(minBedrooms)
-      if (property.bedrooms < minBeds) {
-        return false
-      }
+    // Legacy rows without listingPurpose continue to be treated as sale listings.
+    if (purposeFilter !== 'all' && (property.listingPurpose ?? 'sale') !== purposeFilter) {
+      return false
     }
 
-    // Bathrooms filter
+    if (selectedTypes.length > 0 && !selectedTypes.includes(property.type)) {
+      return false
+    }
+
+    if (minimumPrice !== null || maximumPrice !== null) {
+      const effectivePrice = getPropertyEffectivePrice(property)
+      if (effectivePrice === null) return false
+      if (minimumPrice !== null && effectivePrice < minimumPrice) return false
+      if (maximumPrice !== null && effectivePrice > maximumPrice) return false
+    }
+
+    if (minBedrooms !== 'any') {
+      const minBeds = parseInt(minBedrooms)
+      if ((property.bedrooms ?? 0) < minBeds) return false
+    }
+
     if (minBathrooms !== 'any') {
       const minBaths = parseInt(minBathrooms)
-      if (property.bathrooms < minBaths) {
-        return false
-      }
+      if ((property.bathrooms ?? 0) < minBaths) return false
     }
 
     return true
   })
 
   const handleTypeChange = (type: string, checked: boolean) => {
-    if (checked) {
-      setSelectedTypes([...selectedTypes, type])
-    } else {
-      setSelectedTypes(selectedTypes.filter((t) => t !== type))
-    }
-  }
-
-  const handleLocationChange = (location: {
-    county: string
-    constituency: string
-    ward: string
-    coordinates?: [number, number]
-  }) => {
-    setSelectedLocation({
-      county: location.county,
-      constituency: location.constituency,
-      ward: location.ward,
-    })
+    setSelectedTypes((current) => checked
+      ? current.includes(type) ? current : [...current, type]
+      : current.filter((selectedType) => selectedType !== type))
   }
 
   const clearAllFilters = () => {
     setSearchTerm('')
-    setSelectedLocation({ county: 'all', constituency: '', ward: '' })
+    setLocationFilter('')
+    setPurposeFilter('all')
     setSelectedTypes([])
-    setPriceRange([0, 20000000])
+    setMinPrice('')
+    setMaxPrice('')
     setMinBedrooms('any')
     setMinBathrooms('any')
   }
 
-  const getCurrentSearchCriteria = () => {
-    return {
-      county:
-        selectedLocation.county !== 'all' ? selectedLocation.county : undefined,
-      constituency: selectedLocation.constituency || undefined,
-      ward: selectedLocation.ward || undefined,
-      propertyTypes: selectedTypes.length > 0 ? selectedTypes : undefined,
-      minPrice: priceRange[0] > 0 ? priceRange[0] : undefined,
-      maxPrice: priceRange[1] < 20000000 ? priceRange[1] : undefined,
-      minBedrooms: minBedrooms !== 'any' ? parseInt(minBedrooms) : undefined,
-      maxBedrooms: undefined, // We only have min bedrooms filter
-      minBathrooms: minBathrooms !== 'any' ? parseInt(minBathrooms) : undefined,
-      maxBathrooms: undefined, // We only have min bathrooms filter
-      searchTerm: searchTerm || undefined,
-    }
-  }
+  const getCurrentSearchCriteria = () => ({
+    propertyTypes: selectedTypes.length > 0 ? selectedTypes : undefined,
+    minPrice: minimumPrice ?? undefined,
+    maxPrice: maximumPrice ?? undefined,
+    minBedrooms: minBedrooms !== 'any' ? parseInt(minBedrooms) : undefined,
+    maxBedrooms: undefined,
+    minBathrooms: minBathrooms !== 'any' ? parseInt(minBathrooms) : undefined,
+    maxBathrooms: undefined,
+    searchTerm: searchTerm.trim() || undefined,
+  })
 
-  const hasActiveFilters = () => {
-    const criteria = getCurrentSearchCriteria()
-    return Object.values(criteria).some((value) => value !== undefined)
-  }
+  const unsupportedSaveSearchReason = purposeFilter !== 'all'
+    ? 'Saved searches do not yet support sale/rent purpose filters.'
+    : locationFilter.trim()
+      ? 'Saved searches do not yet support free-text location filters.'
+      : minimumPrice !== null || maximumPrice !== null
+        ? 'Saved searches do not yet support discounted-price filters.'
+        : null
+
+  const hasActiveFilters = Boolean(
+    searchTerm.trim() || locationFilter.trim() || purposeFilter !== 'all' ||
+    selectedTypes.length > 0 || minimumPrice !== null || maximumPrice !== null ||
+    minBedrooms !== 'any' || minBathrooms !== 'any',
+  )
+
+  const getPropertyId = (property: ListingProperty) => property._id || property.id
+
+  const getActionProperty = (property: ListingProperty): Property => ({
+    ...property,
+    _id: property._id || property.id,
+  })
 
   if (loading) {
     return (
@@ -246,8 +222,6 @@ export default function Listings() {
                 </div>
               </div>
 
-              {/* Location - will be moved to filters section */}
-
               {/* Filter Toggle */}
               <Button
                 variant="outline"
@@ -263,6 +237,7 @@ export default function Listings() {
                 <Button
                   variant={viewMode === 'grid' ? 'default' : 'ghost'}
                   size="sm"
+                  aria-label="Grid view"
                   onClick={() => setViewMode('grid')}
                   className="rounded-r-none"
                 >
@@ -271,6 +246,7 @@ export default function Listings() {
                 <Button
                   variant={viewMode === 'list' ? 'default' : 'ghost'}
                   size="sm"
+                  aria-label="List view"
                   onClick={() => setViewMode('list')}
                   className="rounded-l-none"
                 >
@@ -279,14 +255,36 @@ export default function Listings() {
               </div>
             </div>
 
+            <div role="group" aria-label="Listing purpose" className="flex flex-wrap gap-2">
+              {([
+                ['all', 'All'],
+                ['sale', 'For Sale'],
+                ['rent', 'For Rent'],
+              ] as const).map(([purpose, label]) => (
+                <Button
+                  key={purpose}
+                  type="button"
+                  variant={purposeFilter === purpose ? 'default' : 'outline'}
+                  aria-pressed={purposeFilter === purpose}
+                  onClick={() => setPurposeFilter(purpose)}
+                >
+                  {label}
+                </Button>
+              ))}
+            </div>
+
             {/* Filters Section */}
             {showFilters && (
               <div className="flex flex-col gap-6 mt-4">
-                {/* Location Filter */}
-                <div>
-                  <LocationSelector
-                    onLocationChange={handleLocationChange}
-                    initialLocation={selectedLocation}
+                <div className="max-w-md">
+                  <label htmlFor="listing-location" className="text-sm font-medium text-foreground mb-2 block">
+                    Location
+                  </label>
+                  <Input
+                    id="listing-location"
+                    value={locationFilter}
+                    onChange={(event) => setLocationFilter(event.target.value)}
+                    placeholder="Enter a location"
                   />
                 </div>
 
@@ -297,14 +295,7 @@ export default function Listings() {
                       Property Type
                     </label>
                     <div className="space-y-2">
-                      {[
-                        'Maisonette',
-                        'Apartment',
-                        'Bungalow',
-                        'Townhouse',
-                        'Land',
-                        'Office space',
-                      ].map((type) => (
+                      {SALE_PROPERTY_TYPES.map((type) => (
                         <div key={type} className="flex items-center space-x-2">
                           <Checkbox
                             id={type}
@@ -324,21 +315,41 @@ export default function Listings() {
                     </div>
                   </div>
 
-                  {/* Price Range */}
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-64">
                     <label className="text-sm font-medium text-foreground mb-3 block">
-                      Price Range
+                      Price Range{purposeFilter === 'rent' ? ' (monthly)' : ''}
                     </label>
-                    <Slider
-                      min={0}
-                      max={20000000}
-                      step={100000}
-                      value={priceRange}
-                      onValueChange={setPriceRange}
-                    />
-                    <div className="flex justify-between text-xs text-muted-foreground mt-2">
-                      <span>{formatPrice(priceRange[0])}</span>
-                      <span>{formatPrice(priceRange[1])}</span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label htmlFor="minimum-price" className="text-xs text-muted-foreground mb-1 block">
+                          Minimum price
+                        </label>
+                        <Input
+                          id="minimum-price"
+                          type="number"
+                          min="0"
+                          step="any"
+                          inputMode="decimal"
+                          placeholder="No minimum"
+                          value={minPrice}
+                          onChange={(event) => setMinPrice(event.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="maximum-price" className="text-xs text-muted-foreground mb-1 block">
+                          Maximum price
+                        </label>
+                        <Input
+                          id="maximum-price"
+                          type="number"
+                          min="0"
+                          step="any"
+                          inputMode="decimal"
+                          placeholder="No maximum"
+                          value={maxPrice}
+                          onChange={(event) => setMaxPrice(event.target.value)}
+                        />
+                      </div>
                     </div>
                   </div>
 
@@ -394,24 +405,31 @@ export default function Listings() {
               {filteredProperties.length} properties found
             </p>
             <div className="flex items-center gap-2">
-              {hasActiveFilters() && (
+              {hasActiveFilters && (
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setShowSaveSearchModal(true)}
+                  disabled={Boolean(unsupportedSaveSearchReason)}
+                  aria-describedby={unsupportedSaveSearchReason ? 'unsupported-save-search-reason' : undefined}
                   className="text-primary hover:text-primary"
                 >
                   <Search className="h-4 w-4 mr-2" />
                   Save Search
                 </Button>
               )}
-              {hasActiveFilters() && (
+              {hasActiveFilters && (
                 <Button variant="outline" size="sm" onClick={clearAllFilters}>
                   Clear Filters
                 </Button>
               )}
             </div>
           </div>
+          {hasActiveFilters && unsupportedSaveSearchReason && (
+            <p id="unsupported-save-search-reason" className="text-sm text-muted-foreground -mt-4 mb-6">
+              {unsupportedSaveSearchReason}
+            </p>
+          )}
 
           {/* Properties Grid */}
           {filteredProperties.length === 0 ? (
@@ -434,31 +452,20 @@ export default function Listings() {
               {filteredProperties.map((property) => (
                 <Card
                   key={property._id || property.id}
+                  data-testid="property-card"
                   className="property-card group overflow-hidden cursor-pointer"
-                  onClick={() =>
-                    navigate(`/listings/${property._id || property.id}`)
-                  }
+                  onClick={() => {
+                    const propertyId = getPropertyId(property)
+                    if (propertyId) navigate(`/listings/${propertyId}`)
+                  }}
                 >
                   <div className="relative">
                     <img
-                      src={
-                        property.images && property.images.length > 0
-                          ? property.images[0]
-                          : '/placeholder.jpg'
-                      }
+                      src={property.images?.[0] || property.image || '/placeholder.jpg'}
                       alt={property.title}
                       className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-500"
                     />
-                    <div className="absolute top-4 left-4">
-                      {property.featured && (
-                        <Badge
-                          variant="secondary"
-                          className="bg-accent text-accent-foreground"
-                        >
-                          Featured
-                        </Badge>
-                      )}
-                    </div>
+                    <PropertyBadges property={property} className="absolute top-4 left-4" />
                   </div>
                   <CardContent className="p-6">
                     <div className="mb-4">
@@ -468,28 +475,24 @@ export default function Listings() {
                       <div className="flex items-center text-muted-foreground mb-3">
                         <MapPin className="h-4 w-4 mr-1" />
                         <span className="text-sm">
-                          {property.ward &&
-                          property.constituency &&
-                          property.county
-                            ? `${property.ward}, ${property.constituency}, ${property.county}`
-                            : property.location}
+                          {getPropertyLocation(property)}
                         </span>
                       </div>
-                      <DualCurrencyPrice
-                        price={property.price}
-                        originalCurrency="KES"
-                        className="mb-2"
-                      />
+                      <PropertyPrice property={property} className="mb-2" />
                     </div>
                     <div className="flex items-center justify-between text-sm text-muted-foreground mb-6">
-                      <div className="flex items-center">
-                        <Bed className="h-4 w-4 mr-1" />
-                        <span>{property.bedrooms ?? 0} Bed</span>
-                      </div>
-                      <div className="flex items-center">
-                        <Bath className="h-4 w-4 mr-1" />
-                        <span>{property.bathrooms ?? 0} Bath</span>
-                      </div>
+                      {property.type !== 'Land' && (
+                        <>
+                          <div className="flex items-center">
+                            <Bed className="h-4 w-4 mr-1" />
+                            <span>{property.bedrooms ?? 0} Bed</span>
+                          </div>
+                          <div className="flex items-center">
+                            <Bath className="h-4 w-4 mr-1" />
+                            <span>{property.bathrooms ?? 0} Bath</span>
+                          </div>
+                        </>
+                      )}
                       <div className="flex items-center">
                         <Square className="h-4 w-4 mr-1" />
                         <span>
@@ -499,24 +502,33 @@ export default function Listings() {
                       </div>
                     </div>
                     <div className="space-y-2">
+                      <WhatsAppButton property={getActionProperty(property)} className="w-full" />
                       <Link
-                        to={`/listings/${property._id || property.id}`}
+                        to={`/listings/${getPropertyId(property) || ''}`}
                         onClick={(e) => e.stopPropagation()}
                       >
                         <Button className="w-full">View Details</Button>
                       </Link>
-                      <ScheduleViewingModal
-                        propertyId={property._id || property.id}
-                        propertyTitle={property.title}
-                      >
-                        <Button
-                          variant="outline"
-                          className="w-full"
-                          onClick={(e) => e.stopPropagation()}
+                      {isPropertyAvailable(property) ? (
+                        <ScheduleViewingModal
+                          propertyId={getPropertyId(property) || ''}
+                          propertyTitle={property.title}
                         >
-                          Schedule Viewing
-                        </Button>
-                      </ScheduleViewingModal>
+                          <Button
+                            variant="outline"
+                            className="w-full"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            Schedule Viewing
+                          </Button>
+                        </ScheduleViewingModal>
+                      ) : (
+                        <div onClick={(event) => event.stopPropagation()}>
+                          <Button variant="outline" className="w-full" disabled>
+                            Viewing unavailable
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>

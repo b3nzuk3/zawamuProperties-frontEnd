@@ -88,7 +88,15 @@ The create and edit flows share property fields and use the Phase B backend cont
 - Features load from public `GET /features`; owner-only `POST /features` creates or reuses a whitespace/case-normalized name. Existing property feature snapshots remain selectable even if absent from the catalog. Removing a selection never deletes the shared feature. There is no migration or automatic catalog seeding.
 - Property writes use explicit editable fields, not a spread of API response metadata. On errors the editor retains inputs; conflicts require reloading before retrying. The management table uses the server's saved response.
 
-Public rental filters/pricing/status labels, viewing availability enforcement and WhatsApp are Phase D; real enquiry delivery/inbox and saved-search alignment are later phases. The Phase C checkpoint is not launch approval. Backend-only `ADMIN_EMAILS`, the notification recipient and mail configuration remain rollout gates.
+## Phase D: public browsing and availability
+
+Public listings, featured cards and details share sale/rental pricing, discount and availability badges. The owner's free-text location takes priority over retained structured metadata. Rentals show `/ month`; offers show the base amount struck through and the discounted KES amount with approximate USD conversion. Exchange rates remain approximate, not a payment quote.
+
+Browse supports All / For Sale / For Rent, independent property type, free-text location, and optional minimum/maximum effective-price amounts. Empty price bounds are unbounded, including sale listings above KSh 20 million. Sold/Rented listings stay visible; Land hides bedroom/bathroom statistics. Viewing controls are disabled for unavailable listings. A stale page receiving HTTP 409 preserves the form and blocks repeat submission for that listing while retaining a Contact link.
+
+WhatsApp links use the shared company destination `254711168716` and include the listing title and public URL on the current site origin. They open a chat draft only; the application does not automatically send messages. General contact remains available; real contact submission/email and property enquiry forms are Phase E. Saved-search/alert contract alignment is Phase F; unsupported new browse criteria must not be silently saved as a different search.
+
+Each phase remains a separate approval checkpoint, not launch approval. Backend-only `ADMIN_EMAILS`, the notification recipient and mail configuration remain rollout gates.
 
 ## How can I deploy this project?
 

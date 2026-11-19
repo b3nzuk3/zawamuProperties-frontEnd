@@ -1,4 +1,20 @@
-# Frontend Handoff — Phase C
+# Frontend Handoff — Phase D
+
+## Accepted checkpoint — final status
+
+Phase D scoped checkpoint complete in the commit containing this handoff. Spec PASS `deleg_e582a712`; quality APPROVED `deleg_0bbc8297` carrying full `deleg_9a36119e` and targeted `deleg_c8d3c295` after both availability repairs. Final61focused frontend tests in13files/build/config typing/changed-file lint PASS; app typing3original diagnostics. Backend25focused tests/syntax PASS. Real browser/API/Mongo66assertionsPASS preceded the final owner-form-only repair; that repair has fresh helper/create/edit/fields regressions (including three observed RED→GREEN invalid-status cases), not a claimed browser rerun. Earlier39/36/35counts are superseded, not cumulative. No pending review/worker. Invalid/null/empty availability now blocks viewings, displays Unavailable, and requires an explicit owner correction before saving unrelated edits. Only missing availability defaults Available. Other previously recorded runtime code is unchanged.
+
+User has explicitly approved Phase E; begin it only after both D commits and clean-state read-back. Finish E's own verification/review/commit checkpoint, then STOP before F. No push/deploy/messages/production/migration. Root plan/docs local-only; this child handoff versioned. Final cross-phase gate remains deferred.
+
+## Current Phase D checkpoint (supersedes historical entries)
+
+Implementation/scoped verification complete; spec PASS `deleg_e582a712` carrying integrated `deleg_542766df` after price-bound Save Search repair. Final quality/security review `deleg_9a36119e` pending; no Phase D commit yet. Branch `main`, starting `6627614`; backend starting `0de20ac`. User authorized D only: finish checkpoint commit then STOP before E. No push/deploy/production/messages/migration/backfill/catalog seed.
+
+Public Listings/Featured/Details share effective KES+approxUSD prices preserving cents, offers/monthly suffixes, wrapping purpose/Featured/offer/status badges, manual location precedence, Sold/Rented visibility with disabled viewing, Land stats and safe company WhatsApp draft links. Purpose/type filters independent, optional effective-price bounds unbounded by default. Stale409 retains input and blocks repeat submits. Saved Search declines purpose/free-text location/effective-price filters with explicit limitation until F; no E enquiry form/email/inbox or F matching implemented.
+
+Final36focused tests/build/changed-file lint PASS; config typingPASS, app typing3same pre-edit diagnostics (location-selector county_coordinates; saved-searches-manager duplicate maxPrice twice). New saved-search guard regression observed RED→GREEN, max and zero-min covered. Real productionChromium/Express/Mongo8 acceptance54assertions PASS,7real APIresponses, one expected409resource consoleerror, zero unexpected/pageerrors; rates26/fontCSS5explicit fixtures. Public filters/grid/list/featured/detail/mobile geometry/WhatsApp hrefs, real persisted availability change and appointment non-insertion verified. No WhatsApp navigation or messages. DB dropped/readbackempty; browser/preview/API/disconnection/container cleanup verified. Latest report TMPDIR `zawamu-phase-d/acceptance-7d757913841fbe4f/result.json`. See `docs/phase-d-acceptance.md`; final aggregate deferred.
+
+Remaining before checkpoint: quality verdict, final docs/staging/commit/clean read-back. Then STOP E approval. Recipient/SMTP, owner setup, final cross-phase checks and existing baseline/dependency/saved-search privacy debt remain. Parent root docs/plan local-only.
 
 ## Current status (supersedes historical Phase A below)
 
