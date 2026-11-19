@@ -98,6 +98,15 @@ WhatsApp links use the shared company destination `254711168716` and include the
 
 Each phase remains a separate approval checkpoint, not launch approval. Backend-only `ADMIN_EMAILS`, the notification recipient and mail configuration remain rollout gates.
 
+## Phase E: public enquiries and owner inbox
+
+- The general contact form and the property-details enquiry form submit through the shared `src/components/contact/EnquiryForm.tsx` to `POST /contact`. General enquiries preserve the optional phone and interest fields plus the subject; property enquiries send `source: "property"` and the listing ID, and display that listing's title as context. Sold/Rented listings still accept enquiries.
+- The form treats `{ received: true }` as persisted receipt, clears inputs only after that confirmation, prevents duplicate submissions, and retains the user's entries on API failure. The confirmation does not claim that an email was sent.
+- Owner inbox: `/admin/enquiries` is protected by the same owner-only `AdminRoute` as other admin pages. It requests server-side pages of 20 and applies `status` / `source` query filters; detail, status updates, and notification retry use the owner `/contact` API endpoints. Retry is disabled for sent/sending notifications and after five attempts.
+- Legacy three-field contacts render as general/new with safe missing-date and notification defaults. The inbox keeps public enquiries separate from viewing appointments. API/form fixtures in frontend tests are mocks, not real mail-delivery or production access evidence.
+
+This frontend assumes the Phase E backend contract: `POST /contact` returns `{ message: "Your enquiry has been received.", received: true }`; owner `GET /contact` returns `{ items, total, page, limit, pages }`; owner detail/status/retry endpoints return an enquiry DTO. The notification recipient and SMTP/owner rollout configuration remain backend operational gates.
+
 ## How can I deploy this project?
 
 You can deploy this project using your preferred hosting provider (e.g., Vercel, Netlify, etc.).

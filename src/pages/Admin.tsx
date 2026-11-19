@@ -13,6 +13,7 @@ import {
   Trash2,
   Calendar,
   Bell,
+  Inbox,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -626,6 +627,16 @@ export default function Admin() {
                       <p className="text-sm text-muted-foreground">
                         Manage property viewing appointments
                       </p>
+                    </div>
+                  </div>
+                </Link>
+
+                <Link to="/admin/enquiries" className="block">
+                  <div className="flex items-center space-x-3 p-4 rounded-lg border border-border hover:bg-secondary/50 transition-colors">
+                    <Inbox className="h-8 w-8 text-accent" />
+                    <div>
+                      <h3 className="font-medium text-foreground">Enquiries</h3>
+                      <p className="text-sm text-muted-foreground">Review public messages and notification status</p>
                     </div>
                   </div>
                 </Link>

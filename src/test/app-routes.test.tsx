@@ -19,12 +19,13 @@ vi.mock('@/pages/AdminBlog', () => ({ default: () => <div>owner page</div> }))
 vi.mock('@/pages/AdminSettings', () => ({ default: () => <div>owner page</div> }))
 vi.mock('@/pages/AdminAnalytics', () => ({ default: () => <div>owner page</div> }))
 vi.mock('@/pages/AdminViewingRequests', () => ({ default: () => <div>owner page</div> }))
+vi.mock('@/pages/AdminEnquiries', () => ({ default: () => <div>owner page</div> }))
 vi.mock('@/pages/NotFound', () => ({ default: () => <div>not found</div> }))
 vi.mock('@/pages/Login', () => ({ default: () => <div>login destination</div> }))
 vi.mock('@/pages/UserDashboard', () => ({ default: () => <div>dashboard destination</div> }))
 vi.mock('@/pages/CurrencyConverter', () => ({ default: () => null }))
 vi.mock('@/TestMDXEditor', () => ({ default: () => null }))
-const paths = ['/admin', '/admin/properties', '/admin/blog', '/admin/settings', '/admin/analytics', '/admin/viewing-requests']
+const paths = ['/admin', '/admin/properties', '/admin/blog', '/admin/settings', '/admin/analytics', '/admin/viewing-requests', '/admin/enquiries']
 const user = { id: 'fixture', name: 'Fixture', email: 'fixture@example.test', isAdmin: false }
 it.each(paths.flatMap(path => [
  { path, user: null, expected: 'login destination' },

@@ -21,6 +21,7 @@ import AdminBlog from './pages/AdminBlog'
 import AdminSettings from './pages/AdminSettings'
 import AdminAnalytics from './pages/AdminAnalytics'
 import AdminViewingRequests from './pages/AdminViewingRequests'
+import AdminEnquiries from './pages/AdminEnquiries'
 import UserDashboard from './pages/UserDashboard'
 import CurrencyConverter from './pages/CurrencyConverter'
 
@@ -90,6 +91,14 @@ const App = () => (
               element={
                 <AdminRoute>
                   <AdminViewingRequests />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/enquiries"
+              element={
+                <AdminRoute>
+                  <AdminEnquiries />
                 </AdminRoute>
               }
             />

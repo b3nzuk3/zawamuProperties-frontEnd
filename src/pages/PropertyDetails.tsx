@@ -10,29 +10,37 @@ import { ScheduleViewingModal } from '@/components/ui/schedule-viewing-modal'
 import { PropertyPrice } from '@/components/properties/PropertyPrice'
 import { PropertyBadges } from '@/components/properties/PropertyBadges'
 import { WhatsAppButton } from '@/components/properties/WhatsAppButton'
+import EnquiryForm from '@/components/contact/EnquiryForm'
 import { getPropertyLocation, isPropertyAvailable } from '@/lib/property'
 import type { Property } from '@/types/property'
 
 export default function PropertyDetails() {
   const { id } = useParams()
-  const [property, setProperty] = useState<Property | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [propertyResult, setPropertyResult] = useState<{ id: string; property?: Property; error?: string } | null>(null)
+  const currentResult = propertyResult?.id === id ? propertyResult : null
+  const property = currentResult?.property ?? null
+  const error = currentResult?.error ?? null
+  const loading = Boolean(id && !currentResult)
 
   useEffect(() => {
+    if (!id) {
+      setPropertyResult(null)
+      return
+    }
+
+    let active = true
+    setPropertyResult(null)
     async function fetchProperty() {
       try {
-        setLoading(true)
-        setError(null)
         const res = await api.get(`/properties/${id}`)
-        setProperty(res.data)
-      } catch (err) {
-        setError('Failed to load property details.')
-      } finally {
-        setLoading(false)
+        if (active) setPropertyResult({ id, property: res.data })
+      } catch {
+        if (active) setPropertyResult({ id, error: 'Failed to load property details.' })
       }
     }
-    if (id) fetchProperty()
+    void fetchProperty()
+
+    return () => { active = false }
   }, [id])
 
   const mainImage = useMemo(() => {
@@ -170,6 +178,18 @@ export default function PropertyDetails() {
                   </div>
                 </CardContent>
               </Card>
+
+              {property._id && (
+                <Card>
+                  <CardContent className="space-y-4 p-6">
+                    <div>
+                      <h2 className="font-heading text-xl font-semibold">Ask about this property</h2>
+                      <p className="mt-1 text-sm text-muted-foreground">Send a message about {property.title}. Enquiries are available even when a listing is sold or rented.</p>
+                    </div>
+                    <EnquiryForm key={property._id} source="property" propertyId={property._id} propertyTitle={property.title} />
+                  </CardContent>
+                </Card>
+              )}
 
               {property.features && property.features.length > 0 && (
                 <Card>
