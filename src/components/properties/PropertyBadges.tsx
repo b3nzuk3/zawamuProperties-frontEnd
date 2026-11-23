@@ -1,13 +1,24 @@
 import type { Property } from '@/types/property'
+import { Star } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 
 interface PropertyBadgesProps {
   property: Property
   className?: string
+  showFeatured?: boolean
 }
 
-export function PropertyBadges({ property, className }: PropertyBadgesProps) {
+export function PropertyFeaturedBadge({ className }: { className?: string }) {
+  return (
+    <Badge className={cn('gap-1 border-transparent bg-amber-100 px-3 py-1 text-amber-950 hover:bg-amber-100', className)}>
+      <Star aria-hidden="true" className="h-3 w-3 fill-current" />
+      Featured
+    </Badge>
+  )
+}
+
+export function PropertyBadges({ property, className, showFeatured = true }: PropertyBadgesProps) {
   const purposeLabel = property.listingPurpose === 'sale'
     ? 'For Sale'
     : property.listingPurpose === 'rent'
@@ -24,22 +35,20 @@ export function PropertyBadges({ property, className }: PropertyBadgesProps) {
 
   return (
     <div className={cn('flex flex-wrap items-center gap-2', className)} aria-label="Property details">
-      {purposeLabel && <Badge variant="outline" className="whitespace-normal">{purposeLabel}</Badge>}
-      {property.featured === true && (
-        <Badge className="whitespace-normal bg-accent text-accent-foreground">Featured</Badge>
-      )}
-      {hasOffer && <Badge variant="secondary" className="whitespace-normal">{offerPercent}% off</Badge>}
+      {purposeLabel && <Badge className="border-transparent bg-slate-900 px-3 py-1 text-white hover:bg-slate-900">{purposeLabel}</Badge>}
       <Badge
         variant="outline"
         className={cn(
-          'whitespace-normal',
-          availability === 'available' && 'border-emerald-600/40 text-emerald-700 dark:text-emerald-300',
-          availability === 'sold' && 'border-rose-600/40 text-rose-700 dark:text-rose-300',
-          availability === 'rented' && 'border-amber-600/40 text-amber-700 dark:text-amber-300',
+          'border-transparent bg-slate-100 px-3 py-1 text-slate-900',
+          availability === 'available' && 'bg-emerald-700 text-white',
+          availability === 'sold' && 'bg-rose-700 text-white',
+          availability === 'rented' && 'bg-amber-100 text-amber-950',
         )}
       >
         {availabilityLabel}
       </Badge>
+      {hasOffer && <Badge variant="secondary" className="bg-white px-3 py-1 text-slate-900">{offerPercent}% off</Badge>}
+      {showFeatured && property.featured === true && <PropertyFeaturedBadge />}
     </div>
   )
 }

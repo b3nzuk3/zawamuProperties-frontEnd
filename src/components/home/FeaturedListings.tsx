@@ -1,15 +1,14 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { MapPin, Bed, Bath, Square, ArrowRight, Calendar } from 'lucide-react'
+import { MapPin, Bed, Bath, Square, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import api from '@/lib/api'
-import { ScheduleViewingModal } from '@/components/ui/schedule-viewing-modal'
-import { PropertyBadges } from '@/components/properties/PropertyBadges'
+import { PropertyBadges, PropertyFeaturedBadge } from '@/components/properties/PropertyBadges'
 import { PropertyPrice } from '@/components/properties/PropertyPrice'
-import { WhatsAppButton } from '@/components/properties/WhatsAppButton'
-import { getPropertyLocation, isPropertyAvailable } from '@/lib/property'
+import { PropertyCardActions } from '@/components/properties/PropertyCardActions'
+import { getPropertyLocation } from '@/lib/property'
 import type { Property } from '@/types/property'
 
 type FeaturedProperty = Property & { id?: string; image?: string }
@@ -59,11 +58,11 @@ export default function FeaturedListings() {
               <Card
                 key={property._id || property.id}
                 data-testid="property-card"
-                className={`property-card group overflow-hidden ${
+                className={`property-card group relative isolate overflow-hidden ${
                   index === 0 ? 'listing-fade-in' : ''
                 }`}
               >
-                <div className="relative">
+                <div className="relative overflow-hidden">
                   <img
                     src={
                       property.images?.[0] || property.image || '/placeholder.jpg'
@@ -71,9 +70,10 @@ export default function FeaturedListings() {
                     alt={property.title}
                     className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-500"
                   />
-                  <PropertyBadges property={property} className="absolute top-4 left-4 max-w-[75%]" />
-                  <div className="absolute top-4 right-4">
-                    <Badge variant="outline" className="bg-background/90 backdrop-blur-sm">
+                  <PropertyBadges property={property} showFeatured={false} className="absolute top-4 left-4 right-4" />
+                  <PropertyFeaturedBadge className="absolute bottom-4 left-4" />
+                  <div className="absolute bottom-4 right-4 max-w-[45%]">
+                    <Badge variant="outline" className="bg-white text-slate-900">
                       {property.type}
                     </Badge>
                   </div>
@@ -107,39 +107,7 @@ export default function FeaturedListings() {
                       <span>{property.area?.toLocaleString()} sqft</span>
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <WhatsAppButton
-                      property={{ ...property, _id: property._id || property.id }}
-                      className="w-full"
-                    />
-                    <Link to={`/listings/${property._id || property.id}`}>
-                      <Button
-                        variant="outline"
-                        className="w-full hover:bg-accent hover:text-accent-foreground transition-colors"
-                      >
-                        View Details
-                        <ArrowRight className="h-4 w-4 ml-2" />
-                      </Button>
-                    </Link>
-                    {isPropertyAvailable(property) ? (
-                      <ScheduleViewingModal
-                        propertyId={property._id || property.id || ''}
-                        propertyTitle={property.title}
-                      >
-                        <Button
-                          variant="secondary"
-                          className="w-full hover:bg-accent hover:text-accent-foreground transition-colors"
-                        >
-                          <Calendar className="h-4 w-4 mr-2" />
-                          Schedule Viewing
-                        </Button>
-                      </ScheduleViewingModal>
-                    ) : (
-                      <Button variant="secondary" className="w-full" disabled>
-                        Viewing unavailable
-                      </Button>
-                    )}
-                  </div>
+                  <PropertyCardActions property={{ ...property, _id: property._id || property.id }} detailsVariant="outline" />
                 </CardContent>
               </Card>
             ))}

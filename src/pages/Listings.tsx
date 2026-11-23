@@ -21,16 +21,14 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import api from '@/lib/api'
-import { ScheduleViewingModal } from '@/components/ui/schedule-viewing-modal'
 import { SaveSearchModal } from '@/components/ui/save-search-modal'
-import { PropertyBadges } from '@/components/properties/PropertyBadges'
+import { PropertyBadges, PropertyFeaturedBadge } from '@/components/properties/PropertyBadges'
 import { PropertyPrice } from '@/components/properties/PropertyPrice'
-import { WhatsAppButton } from '@/components/properties/WhatsAppButton'
+import { PropertyCardActions } from '@/components/properties/PropertyCardActions'
 import {
   getPropertyLocation,
-  isPropertyAvailable,
   SALE_PROPERTY_TYPES,
 } from '@/lib/property'
 import {
@@ -51,7 +49,6 @@ function parsePriceFilter(value: string): number | null {
 }
 
 export default function Listings() {
-  const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const savedSearchQuery = searchParams.get('search')
   const [initialReplay] = useState(() => parseSavedSearchCriteria(savedSearchQuery))
@@ -478,19 +475,16 @@ export default function Listings() {
                 <Card
                   key={property._id || property.id}
                   data-testid="property-card"
-                  className="property-card group overflow-hidden cursor-pointer"
-                  onClick={() => {
-                    const propertyId = getPropertyId(property)
-                    if (propertyId) navigate(`/listings/${propertyId}`)
-                  }}
+                  className="property-card group relative isolate overflow-hidden"
                 >
-                  <div className="relative">
+                  <div className="relative overflow-hidden">
                     <img
                       src={property.images?.[0] || property.image || '/placeholder.jpg'}
                       alt={property.title}
                       className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-500"
                     />
-                    <PropertyBadges property={property} className="absolute top-4 left-4" />
+                    <PropertyBadges property={property} showFeatured={false} className="absolute top-4 left-4 right-4" />
+                    {property.featured === true && <PropertyFeaturedBadge className="absolute bottom-4 left-4" />}
                   </div>
                   <CardContent className="p-6">
                     <div className="mb-4">
@@ -526,35 +520,7 @@ export default function Listings() {
                         </span>
                       </div>
                     </div>
-                    <div className="space-y-2">
-                      <WhatsAppButton property={getActionProperty(property)} className="w-full" />
-                      <Link
-                        to={`/listings/${getPropertyId(property) || ''}`}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <Button className="w-full">View Details</Button>
-                      </Link>
-                      {isPropertyAvailable(property) ? (
-                        <ScheduleViewingModal
-                          propertyId={getPropertyId(property) || ''}
-                          propertyTitle={property.title}
-                        >
-                          <Button
-                            variant="outline"
-                            className="w-full"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            Schedule Viewing
-                          </Button>
-                        </ScheduleViewingModal>
-                      ) : (
-                        <div onClick={(event) => event.stopPropagation()}>
-                          <Button variant="outline" className="w-full" disabled>
-                            Viewing unavailable
-                          </Button>
-                        </div>
-                      )}
-                    </div>
+                    <PropertyCardActions property={getActionProperty(property)} />
                   </CardContent>
                 </Card>
               ))}

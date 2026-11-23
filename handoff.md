@@ -1,5 +1,11 @@
 # Frontend Handoff — Launch Readiness
 
+## Property-card UI follow-up
+
+The checkpoint containing this handoff refines homepage/listings cards: solid purpose/availability badges, Featured separately on imagery, full-width View Details above equal icon-only WhatsApp/viewing actions, and native full-card links with independent contact controls. Sold/Rented viewing guards and legacy IDs remain supported. `docs/property-card-ui.md` records scope, executable hashes and evidence: 192 tests/29 files, typecheck/full and targeted lint/build/whitespace PASS; production Chromium 143 fixture-backed assertions at 320/390/768/1440px PASS, zero console/page errors or mutation requests. Independent review `deleg_c8042917` PASS/no blockers. Unchanged tablet Header overflow and the existing build bundle warning remain outside this UI scope.
+
+The user explicitly requested pushing these finished frontend changes; that authorization supersedes the historical no-push stop below for this scoped checkpoint only. No backend change/push, real messages, account/data writes or explicit deployment. Provider-side automatic deployment is not verified. Preview process and Chromium have been stopped. The prior launch-readiness status below is historical and remains valid for its own checkpoint.
+
 ## Launch-readiness local checkpoint — STOP after scoped commit
 
 The user approved the launch-readiness repair checkpoint after Phase F. This checkpoint advances frontend `main` from `04066f1`; its commit includes this handoff. Verified guest confirmation/isolated sessionStorage proof, bounded30-day expiry/logout, private paging/consent, invalid criteria fail-closed, cadence/quota editing, POST admin trigger, full type/lint repairs and targeted dependency updates are implemented. Admin password and disabled registration preserved; approved owner/recipient `zawamuproperty@gmail.com`. No push/deploy/production writes/real messages/migration/backfill/seeding authorized.
