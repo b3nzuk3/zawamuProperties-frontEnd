@@ -24,12 +24,25 @@ import { buildPropertyPayload, createPropertyForm, validatePropertyForm } from '
 import MdEditor from 'react-markdown-editor-lite'
 import MarkdownIt from 'markdown-it'
 import 'react-markdown-editor-lite/lib/index.css'
+import type { LucideIcon } from 'lucide-react'
 
 type StatCard = {
   title: string
   value: string | number
   change: string
-  icon: any
+  icon: LucideIcon
+}
+
+interface BlogPostForm {
+  title: string
+  category: string
+  readTime: string
+  image: File | null
+  imagePreview: string
+  content: string
+  author: string
+  date: string
+  featured: boolean
 }
 
 function formatChange(pct: number) {
@@ -77,7 +90,7 @@ export default function Admin() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [postModal, setPostModal] = useState(false)
-  const [postForm, setPostForm] = useState({
+  const [postForm, setPostForm] = useState<BlogPostForm>({
     title: '',
     category: '',
     readTime: '',
@@ -214,45 +227,44 @@ export default function Admin() {
   }
 
   const handleCheckAlerts = async () => {
+    const confirmed = window.confirm(
+      'Run the saved-search alert check? It may send email only when delivery is configured and a verified saved search has opted in. Continue?',
+    )
+    if (!confirmed) return
     setCheckingAlerts(true)
     try {
-      const response = await api.get(
-        '/saved-searches/admin/check-matches?hoursBack=24'
-      )
-      const { data } = response.data
-
-      if (data.totalMatches > 0) {
-        alert(
-          `Found ${data.totalMatches} matches and sent ${
-            data.emailResults.filter((r: any) => r.success).length
-          } email alerts!`
-        )
-      } else {
-        alert('No new property matches found for saved searches.')
-      }
-    } catch (error) {
-      console.error('Error checking alerts:', error)
+      await api.post('/saved-searches/admin/check-matches', { hoursBack: 24 })
+      alert('Alert check request completed. Only verified searches with explicit alert consent are eligible; delivery depends on server configuration.')
+    } catch {
       alert('Error checking property alerts. Please try again.')
     } finally {
       setCheckingAlerts(false)
     }
   }
 
-  const handlePostInput = (e: any) => {
-    const { name, value, files } = e.target
+  const handlePostInput = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, checked, files } = event.currentTarget
     if (name === 'image') {
-      const file = files[0]
+      const file = files?.[0] ?? null
       setPostForm((f) => ({
         ...f,
         image: file,
         imagePreview: file ? URL.createObjectURL(file) : '',
       }))
+    } else if (name === 'featured') {
+      setPostForm((f) => ({ ...f, featured: checked }))
     } else {
-      setPostForm((f) => ({ ...f, [name]: value }))
+      switch (name) {
+        case 'title': setPostForm((f) => ({ ...f, title: value })); break
+        case 'category': setPostForm((f) => ({ ...f, category: value })); break
+        case 'readTime': setPostForm((f) => ({ ...f, readTime: value })); break
+        case 'author': setPostForm((f) => ({ ...f, author: value })); break
+        case 'date': setPostForm((f) => ({ ...f, date: value })); break
+      }
     }
   }
 
-  const handleAddPost = async (e: any) => {
+  const handleAddPost = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setPostLoading(true)
     setPostError('')
@@ -643,6 +655,7 @@ export default function Admin() {
 
                 {/* Move Check Property Alerts next */}
                 <button
+                  type="button"
                   onClick={handleCheckAlerts}
                   disabled={checkingAlerts}
                   className="w-full block text-left"
@@ -656,7 +669,7 @@ export default function Admin() {
                       <p className="text-sm text-muted-foreground">
                         {checkingAlerts
                           ? 'Checking for new matches...'
-                          : 'Send alerts for new matching properties'}
+                          : 'Run the configured check for verified, opted-in searches'}
                       </p>
                     </div>
                   </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from './card'
 import { Input } from './input'
 import { Label } from './label'
@@ -60,26 +60,27 @@ export function CurrencyConverter() {
   }, [rates])
 
   // Convert currency
-  const convertCurrency = () => {
+  const convertCurrency = useCallback(() => {
     if (!amount) return
 
     const amountNum = parseFloat(amount)
     if (isNaN(amountNum)) return
+    const kesPerUsd = rates.KES || 150
 
     let result: number
 
     if (fromCurrency === 'USD' && toCurrency === 'KES') {
-      result = usdToKes(amountNum)
+      result = amountNum * kesPerUsd
     } else if (fromCurrency === 'KES' && toCurrency === 'USD') {
-      result = kesToUsd(amountNum)
+      result = amountNum / kesPerUsd
     } else if (fromCurrency === 'KES') {
       // Converting FROM KES to another currency (via USD)
-      const usdAmount = kesToUsd(amountNum)
+      const usdAmount = amountNum / kesPerUsd
       result = usdAmount * (rates[toCurrency] || 1)
     } else if (toCurrency === 'KES') {
       // Converting TO KES from another currency (via USD)
       const usdAmount = amountNum / (rates[fromCurrency] || 1)
-      result = usdToKes(usdAmount)
+      result = usdAmount * kesPerUsd
     } else {
       // Converting between two non-KES currencies (via USD)
       const usdAmount = amountNum / (rates[fromCurrency] || 1)
@@ -92,11 +93,11 @@ export function CurrencyConverter() {
         maximumFractionDigits: 2,
       })
     )
-  }
+  }, [amount, fromCurrency, toCurrency, rates])
 
   useEffect(() => {
     convertCurrency()
-  }, [amount, fromCurrency, toCurrency, rates])
+  }, [convertCurrency])
 
   // Swap currencies
   const swapCurrencies = () => {

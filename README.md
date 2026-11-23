@@ -1,5 +1,9 @@
 # Welcome to your Zawamu Properties project
 
+## Current launch-readiness follow-up
+
+Saved-search management now requires an email-verified guest session, separate from admin login. See `docs/launch-readiness.md` and `DEPLOYMENT_CHECKLIST.md` for current contracts, evidence and push/deployment boundaries; older Phase A–F sections below describe those historical checkpoints. Use Node 22.12+ and npm with the committed lockfile. Follow-up verification is in progress, not launch approval.
+
 ## Project info
 
 **URL**:
@@ -115,11 +119,13 @@ Historical `apartment`, `land` and `office` types map only to Apartment, Land an
 
 The saved-search manager's matching previews use the shared price, location and availability components. Saved browse matches may include Sold/Rented listings; only available listings qualify for new-property email alerts. The backend matcher and alert sender remain authoritative. UI/API test responses are mocks unless the acceptance report explicitly records disposable Mongo/HTTP/browser execution.
 
+The launch-readiness follow-up replaces typing an email as authority with a one-time email link and explicit confirmation. A dedicated sessionStorage proof and `X-Saved-Search-Session` client scope private CRUD/results; admin JWTs do not grant guest access. Public saves return a pending receipt with alerts off. Each pending or legacy search needs an explicit verified alert opt-in; consuming a management link alone does not subscribe anyone. Invalid legacy criteria disable replay and alerts rather than falling back to an unrestricted search. The manager uses server pages and labels matching previews limited to the first ten results.
+
 ## Deployment authorization
 
 Use `DEPLOYMENT_CHECKLIST.md` as the current coordinated release/rollback checklist; historical viewing-only instructions are not release approval. Phase F covers final local verification only. Pushing, deployment, production writes and real message delivery require separate approval. Release the compatible backend before the frontend, preserve legacy location metadata and stored enquiries, and do not introduce migration/backfill/catalog seeding jobs.
 
-Launch still requires an approved business enquiry recipient (TBD), working backend SMTP sender/credentials, existing owner accounts in backend-only `ADMIN_EMAILS`, trusted backend `FRONTEND_URL`, correct frontend `VITE_API_URL` including `/api`, and validated proxy/shared rate-limit configuration. Controlled mail fixtures are not real-provider delivery evidence. Saved-search user/email/ID routes retain a documented public privacy/ownership gap; matching alignment does not fix it or authorize enabling bulk alerts. The owner-only backend alert trigger is not an automatic scheduler, and saved alert frequencies are not a delivery guarantee. Remaining baseline typing/lint/dependency risks must stay visible in the acceptance report.
+The approved business enquiry recipient and owner email are `zawamuproperty@gmail.com`. Launch still requires working backend SMTP sender/credentials, that existing account in backend-only `ADMIN_EMAILS`, trusted backend `FRONTEND_URL`, correct frontend `VITE_API_URL` including `/api`, and validated proxy/shared rate-limit configuration. The existing admin password is unchanged and cannot be recovered from its bcrypt hash; there are no default credentials. Controlled mail fixtures are not real-provider delivery evidence. Verified saved-search ownership and durable worker/cadence fixes are local changes, not permission to enable bulk alerts or activate a timer. The old send-capable GET is disabled; admin execution uses explicit POST and feature opt-in. Current follow-up acceptance records, not historical baseline failures, determine typing/lint/dependency status.
 
 You can deploy this project using your preferred hosting provider (e.g., Vercel, Netlify, etc.).
 

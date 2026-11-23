@@ -1,224 +1,268 @@
-import React, { useState } from 'react'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '../components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
-import { Badge } from '../components/ui/badge'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
 import { SavedSearchesManager } from '../components/ui/saved-searches-manager'
-import { useToast } from '../components/ui/use-toast'
+import { savedSearchApi } from '../lib/savedSearchApi'
 import {
-  User,
-  Bell,
-  Search,
-  Settings,
-  Mail,
-  Phone,
-  Calendar,
-  AlertCircle,
-  TrendingUp,
-} from 'lucide-react'
+  captureSavedSearchAccessLink,
+  clearCapturedSavedSearchAccessLink,
+  clearStoredSavedSearchSession,
+  getStoredSavedSearchSession,
+  isSavedSearchUnauthorized,
+  savedSearchSessionConfig,
+  storeSavedSearchSession,
+} from '../lib/savedSearchApi'
+import type { SavedSearchSession } from '../lib/savedSearchApi'
+import { Mail, Search, ShieldCheck, LogOut } from 'lucide-react'
+
+const MAX_TIMEOUT_MS = 2_147_483_647
+
+function getConsumedSession(response: unknown): SavedSearchSession | null {
+  if (!response || typeof response !== 'object') return null
+  const body = (response as { data?: unknown }).data
+  if (!body || typeof body !== 'object') return null
+  const data = (body as { data?: unknown }).data
+  if (!data || typeof data !== 'object') return null
+  const session = data as Partial<SavedSearchSession>
+  if (
+    typeof session.token !== 'string' || !session.token ||
+    typeof session.email !== 'string' || !session.email ||
+    typeof session.expiresAt !== 'string' ||
+    !Number.isFinite(Date.parse(session.expiresAt)) ||
+    Date.parse(session.expiresAt) <= Date.now()
+  ) return null
+  return { token: session.token, email: session.email, expiresAt: session.expiresAt }
+}
 
 export default function UserDashboard() {
-  const [userEmail, setUserEmail] = useState('')
-  const [showDashboard, setShowDashboard] = useState(false)
-  const { toast } = useToast()
+  const [session, setSession] = useState<SavedSearchSession | null>(() => getStoredSavedSearchSession())
+  const [linkToken, setLinkToken] = useState<string | null>(() => captureSavedSearchAccessLink())
+  const [email, setEmail] = useState('')
+  const [requestStatus, setRequestStatus] = useState<'idle' | 'requesting' | 'requested' | 'error'>('idle')
+  const [requestMessage, setRequestMessage] = useState('')
+  const [confirming, setConfirming] = useState(false)
+  const [confirmationError, setConfirmationError] = useState('')
+  const [logoutWarning, setLogoutWarning] = useState('')
+  const requestRevision = useRef(0)
+  const confirmationRevision = useRef(0)
+  const confirmationInFlight = useRef(false)
+  const sessionRef = useRef(session)
+  const emailRef = useRef(email)
+  sessionRef.current = session
+  emailRef.current = email
 
-  const handleEmailSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!userEmail.trim()) {
-      toast({
-        title: 'Error',
-        description: 'Please enter your email address',
-        variant: 'destructive',
-      })
+  useEffect(() => () => {
+    requestRevision.current += 1
+    confirmationRevision.current += 1
+  }, [])
+
+  const invalidateSession = useCallback((token: string) => {
+    if (sessionRef.current?.token !== token) return
+    confirmationRevision.current += 1
+    clearStoredSavedSearchSession()
+    setSession(null)
+  }, [])
+
+  useEffect(() => {
+    if (!session) return
+    const remaining = Date.parse(session.expiresAt) - Date.now()
+    if (remaining <= 0) {
+      invalidateSession(session.token)
       return
     }
-    setShowDashboard(true)
+    const expiresAt = Date.parse(session.expiresAt)
+    let timeout: number | undefined
+    const checkExpiry = () => {
+      const remaining = expiresAt - Date.now()
+      if (remaining <= 0) {
+        invalidateSession(session.token)
+        return
+      }
+      timeout = window.setTimeout(checkExpiry, Math.min(remaining, MAX_TIMEOUT_MS))
+    }
+    checkExpiry()
+    return () => {
+      if (timeout !== undefined) window.clearTimeout(timeout)
+    }
+  }, [session, invalidateSession])
+
+  const handleEmailChange = (value: string) => {
+    requestRevision.current += 1
+    emailRef.current = value
+    setEmail(value)
+    setRequestStatus('idle')
+    setRequestMessage('')
   }
 
-  if (!showDashboard) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="mx-auto w-12 h-12 bg-primary rounded-full flex items-center justify-center mb-4">
-              <User className="h-6 w-6 text-primary-foreground" />
-            </div>
-            <CardTitle>Access Your Dashboard</CardTitle>
-            <CardDescription>
-              Enter your email address to view your saved searches and alerts
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleEmailSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="your.email@example.com"
-                  value={userEmail}
-                  onChange={(e) => setUserEmail(e.target.value)}
-                  required
-                />
-              </div>
-              <Button type="submit" className="w-full">
-                <Search className="h-4 w-4 mr-2" />
-                Access Dashboard
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
-    )
+  const handleRequestAccess = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const requestedEmail = email.trim()
+    if (!requestedEmail) return
+
+    const revision = ++requestRevision.current
+    setRequestStatus('requesting')
+    setRequestMessage('')
+    try {
+      await savedSearchApi.post('/saved-searches/access-links', { email: requestedEmail })
+      if (revision !== requestRevision.current || emailRef.current.trim() !== requestedEmail) return
+      setRequestStatus('requested')
+      setRequestMessage('If an access link can be issued for this email, check its inbox. This request does not confirm access.')
+    } catch {
+      if (revision !== requestRevision.current || emailRef.current.trim() !== requestedEmail) return
+      setRequestStatus('error')
+      setRequestMessage('We could not submit the access request. Please try again.')
+    }
   }
+
+  const handleConfirmAccess = async () => {
+    if (!linkToken || confirmationInFlight.current) return
+    confirmationInFlight.current = true
+    const revision = ++confirmationRevision.current
+    setConfirming(true)
+    setConfirmationError('')
+    try {
+      const response = await savedSearchApi.post('/saved-searches/access-links/consume', { token: linkToken })
+      if (revision !== confirmationRevision.current) return
+      const consumedSession = getConsumedSession(response)
+      if (!consumedSession) {
+        setConfirmationError('This access link is invalid or expired. Request a new link from your email address.')
+        return
+      }
+      storeSavedSearchSession(consumedSession)
+      if (!getStoredSavedSearchSession()) {
+        setConfirmationError('This access session has expired. Request a new access link.')
+        return
+      }
+      clearCapturedSavedSearchAccessLink()
+      setLinkToken(null)
+      setSession(consumedSession)
+      setLogoutWarning('')
+    } catch (error) {
+      if (revision !== confirmationRevision.current) return
+      setConfirmationError(isSavedSearchUnauthorized(error)
+        ? 'This access link is invalid or expired. Request a new link from your email address.'
+        : 'We could not confirm this link. Please try again.')
+    } finally {
+      if (revision === confirmationRevision.current) {
+        confirmationInFlight.current = false
+        setConfirming(false)
+      }
+    }
+  }
+
+  const handleRequestAnotherLink = () => {
+    confirmationRevision.current += 1
+    clearCapturedSavedSearchAccessLink()
+    setLinkToken(null)
+    setConfirmationError('')
+    setConfirming(false)
+    confirmationInFlight.current = false
+  }
+
+  const handleLogout = () => {
+    const currentSession = sessionRef.current
+    const revision = ++confirmationRevision.current
+    clearStoredSavedSearchSession()
+    setSession(null)
+    setLogoutWarning('')
+    if (currentSession) {
+      void savedSearchApi.delete('/saved-searches/session', savedSearchSessionConfig(currentSession.token)).catch(() => {
+        if (revision === confirmationRevision.current) {
+          setLogoutWarning('Local access is cleared, but we could not confirm server-side revocation. Any copied session token may remain valid until expiry. Reconnect and contact support if necessary.')
+        }
+      })
+    }
+  }
+
+  const showLinkConfirmation = Boolean(linkToken)
+  const showSession = Boolean(session && !showLinkConfirmation)
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">My Dashboard</h1>
-              <p className="text-gray-600 mt-1">
-                Manage your saved searches and property alerts
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="text-sm">
-                <Mail className="h-3 w-3 mr-1" />
-                {userEmail}
-              </Badge>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowDashboard(false)}
-              >
-                Switch Account
+    <div className="min-h-screen bg-background px-4 py-10">
+      <main className="mx-auto max-w-5xl space-y-6">
+        <header>
+          <h1 className="text-3xl font-bold text-foreground">Saved Searches</h1>
+          <p className="mt-2 text-muted-foreground">Manage saved searches only after verifying access to their email address.</p>
+        </header>
+
+        {logoutWarning && <p role="alert" className="text-sm text-destructive">{logoutWarning}</p>}
+
+        {showLinkConfirmation && (
+          <Card className="mx-auto max-w-xl">
+            <CardHeader>
+              <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <ShieldCheck className="h-6 w-6" />
+              </div>
+              <CardTitle>Confirm your email access</CardTitle>
+              <CardDescription>The one-time email link is ready. Confirm below to open a temporary saved-search session.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {confirmationError && <p role="alert" className="text-sm text-destructive">{confirmationError}</p>}
+              <div className="flex flex-wrap gap-2">
+                <Button type="button" onClick={() => void handleConfirmAccess()} disabled={confirming}>
+                  {confirming ? 'Confirming…' : 'Confirm email access'}
+                </Button>
+                <Button type="button" variant="outline" onClick={handleRequestAnotherLink}>
+                  Request another access link
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">Opening this page alone does not grant access. The link token is not kept in the URL or browser storage.</p>
+            </CardContent>
+          </Card>
+        )}
+
+        {!showLinkConfirmation && !showSession && (
+          <Card className="mx-auto max-w-xl">
+            <CardHeader>
+              <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <Mail className="h-6 w-6" />
+              </div>
+              <CardTitle>Request an access link</CardTitle>
+              <CardDescription>Enter the email used for saved searches. Typing an address does not grant access; you must open and confirm its one-time verification link.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleRequestAccess} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="access-email">Email address</Label>
+                  <Input
+                    id="access-email"
+                    type="email"
+                    autoComplete="email"
+                    required
+                    value={email}
+                    onChange={(event) => handleEmailChange(event.target.value)}
+                    placeholder="your.email@example.com"
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={requestStatus === 'requesting'}>
+                  <Search className="mr-2 h-4 w-4" />
+                  {requestStatus === 'requesting' ? 'Requesting…' : 'Email me a verification link'}
+                </Button>
+                {requestMessage && <p role={requestStatus === 'error' ? 'alert' : 'status'} className="text-sm text-muted-foreground">{requestMessage}</p>}
+              </form>
+            </CardContent>
+          </Card>
+        )}
+
+        {showSession && session && (
+          <>
+            <div className="flex flex-col justify-between gap-4 rounded-lg border border-border bg-card p-4 sm:flex-row sm:items-center">
+              <div>
+                <p className="text-sm text-muted-foreground">Verified email session</p>
+                <p className="font-medium text-foreground">{session.email}</p>
+                <p className="text-xs text-muted-foreground">Expires {new Date(session.expiresAt).toLocaleString()}</p>
+              </div>
+              <Button type="button" variant="outline" onClick={handleLogout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                Log out
               </Button>
             </div>
-          </div>
-        </div>
-
-        {/* Dashboard Content */}
-        <Tabs defaultValue="searches" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="searches" className="flex items-center gap-2">
-              <Search className="h-4 w-4" />
-              Saved Searches
-            </TabsTrigger>
-            <TabsTrigger value="alerts" className="flex items-center gap-2">
-              <Bell className="h-4 w-4" />
-              Alert History
-            </TabsTrigger>
-            <TabsTrigger value="settings" className="flex items-center gap-2">
-              <Settings className="h-4 w-4" />
-              Settings
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="searches" className="space-y-6">
-            <SavedSearchesManager userEmail={userEmail} />
-          </TabsContent>
-
-          <TabsContent value="alerts" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <AlertCircle className="h-5 w-5" />
-                  Alert History
-                </CardTitle>
-                <CardDescription>
-                  View your recent property alerts and notifications
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8">
-                  <Bell className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">No Alerts Yet</h3>
-                  <p className="text-muted-foreground">
-                    You'll see your property alerts here once they start coming
-                    in.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="settings" className="space-y-6">
-            <div className="grid gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Mail className="h-5 w-5" />
-                    Email Preferences
-                  </CardTitle>
-                  <CardDescription>
-                    Manage your email notification settings
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="text-center py-8">
-                    <Mail className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">
-                      Email Settings
-                    </h3>
-                    <p className="text-muted-foreground">
-                      Email preferences are managed per saved search. Edit
-                      individual searches to customize your notifications.
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5" />
-                    Account Statistics
-                  </CardTitle>
-                  <CardDescription>
-                    Overview of your saved searches and activity
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="text-center p-4 bg-muted rounded-lg">
-                      <Search className="h-8 w-8 text-primary mx-auto mb-2" />
-                      <div className="text-2xl font-bold">0</div>
-                      <div className="text-sm text-muted-foreground">
-                        Saved Searches
-                      </div>
-                    </div>
-                    <div className="text-center p-4 bg-muted rounded-lg">
-                      <Bell className="h-8 w-8 text-primary mx-auto mb-2" />
-                      <div className="text-2xl font-bold">0</div>
-                      <div className="text-sm text-muted-foreground">
-                        Total Alerts
-                      </div>
-                    </div>
-                    <div className="text-center p-4 bg-muted rounded-lg">
-                      <Calendar className="h-8 w-8 text-primary mx-auto mb-2" />
-                      <div className="text-2xl font-bold">0</div>
-                      <div className="text-sm text-muted-foreground">
-                        Days Active
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-        </Tabs>
-      </div>
+            <SavedSearchesManager session={session} onSessionInvalid={invalidateSession} />
+          </>
+        )}
+      </main>
     </div>
   )
 }

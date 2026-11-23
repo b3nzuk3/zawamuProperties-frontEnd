@@ -12,6 +12,7 @@ import { MapPin } from 'lucide-react'
 interface County {
   county_code: number
   county_name: string
+  county_coordinates: [number, number] | null
   constituencies: Constituency[]
 }
 

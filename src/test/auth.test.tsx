@@ -1,7 +1,8 @@
 // Mocked Axios fixtures, not live auth.
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { it, expect, vi } from 'vitest'
-import { AuthProvider, useAuth } from '@/hooks/useAuth'
+import { AuthProvider } from '@/hooks/useAuth'
+import { useAuth } from '@/hooks/useAuthContext'
 import api from '@/lib/api'
 vi.mock('@/lib/api', () => ({ default: { get: vi.fn(), post: vi.fn() } }))
 const owner = { id: 'owner-id', name: 'Owner', email: 'owner@example.test', isAdmin: true }

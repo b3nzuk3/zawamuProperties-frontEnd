@@ -5,8 +5,9 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import { it, expect, vi } from 'vitest'
 import Header from '@/components/layout/Header'
 import Login from '@/pages/Login'
-import { useAuth } from '@/hooks/useAuth'
-vi.mock('@/hooks/useAuth', () => ({ useAuth: vi.fn() }))
+import { useAuth } from '@/hooks/useAuthContext'
+vi.mock('@/hooks/useAuthContext', () => ({ useAuth: vi.fn() }))
+vi.mock('@/hooks/useAuth', () => ({ AuthProvider: ({ children }: { children: React.ReactNode }) => <>{children}</> }))
 vi.mock('@/components/layout/Layout', () => ({ default: ({ children }: { children: React.ReactNode }) => <>{children}</> }))
 const fixture = { id: 'fixture-id', name: 'Fixture', email: 'fixture@example.test', isAdmin: false }
 it.each([

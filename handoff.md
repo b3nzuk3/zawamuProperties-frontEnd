@@ -1,4 +1,12 @@
-# Frontend Handoff — Phase F
+# Frontend Handoff — Launch Readiness
+
+## Launch-readiness local checkpoint — STOP after scoped commit
+
+The user approved the launch-readiness repair checkpoint after Phase F. This checkpoint advances frontend `main` from `04066f1`; its commit includes this handoff. Verified guest confirmation/isolated sessionStorage proof, bounded30-day expiry/logout, private paging/consent, invalid criteria fail-closed, cadence/quota editing, POST admin trigger, full type/lint repairs and targeted dependency updates are implemented. Admin password and disabled registration preserved; approved owner/recipient `zawamuproperty@gmail.com`. No push/deploy/production writes/real messages/migration/backfill/seeding authorized.
+
+Clean npm-installed siblings: frontend185tests/28files/typecheck/full lint/build PASS; backend152tests PASS; full/production audits both zero; changed-file lint44files/backend syntax23files passed. Nonblocking bundle-size warning remains. Both specification reviews and independent quality/security passed/no blockers. Real Mongo8/executable Express/production Chromium run `e4539882-d033-4270-8729-daf636e13eff` passed11 gates,105 browser assertions/80 API responses, five overflow checks and inspected desktop/mobile screenshots. Guest/privacy/consent, fixture owner/ordinary/anonymous boundaries, enquiries, cadence/deduplication/concurrency, unknown-quota quarantine and read-only CLI passed; exact owned DB/container/process/browser cleanup verified. Nodemailer ESM/fonts/currency/images are explicit fixtures, not provider delivery. Durable results/input hashes: `docs/launch-readiness-evidence.json`; runbook/limits/external gates: `docs/launch-readiness.md`. Root plan/handoff/verifier bundle local-only. STOP: separate approval is required for push/deployment, retained owner/provider checks and timer activation. Following Phase F/older sections are historical.
+
+## Historical Phase F
 
 ## Completed Phase F local checkpoint — STOP
 

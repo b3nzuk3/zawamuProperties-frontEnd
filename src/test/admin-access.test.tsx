@@ -3,8 +3,8 @@ import { render, screen } from '@testing-library/react'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import { it, expect, vi } from 'vitest'
 import AdminRoute from '@/components/auth/AdminRoute'
-import { useAuth } from '@/hooks/useAuth'
-vi.mock('@/hooks/useAuth', () => ({ useAuth: vi.fn() }))
+import { useAuth } from '@/hooks/useAuthContext'
+vi.mock('@/hooks/useAuthContext', () => ({ useAuth: vi.fn() }))
 it.each([
   ['anonymous', null, false, 'login'], ['loading', null, true, 'Loading...'],
   ['ordinary', { isAdmin: false }, false, 'dashboard'],

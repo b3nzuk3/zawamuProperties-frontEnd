@@ -1,18 +1,9 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import api from '@/lib/api'
+import { AuthContext } from './authContext'
+import type { User } from './authContext'
 
-export interface User {
-  id: string
-  name: string
-  email: string
-  isAdmin: boolean
-}
-interface AuthContextType {
-  user: User | null
-  loading: boolean
-  login: (email: string, password: string) => Promise<User>
-  logout: () => void
-}
+export type { User } from './authContext'
 // Only an explicit server-provided boolean grants owner UI access.
 function readUser(value: unknown): User {
   if (!value || typeof value !== 'object') throw new Error('Invalid user response')
@@ -22,8 +13,6 @@ function readUser(value: unknown): User {
   }
   return { id: dto.id, name: dto.name, email: dto.email, isAdmin: dto.isAdmin === true }
 }
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
@@ -74,9 +63,4 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(false)
   }
   return <AuthContext.Provider value={{ user, loading, login, logout }}>{children}</AuthContext.Provider>
-}
-export const useAuth = () => {
-  const context = useContext(AuthContext)
-  if (!context) throw new Error('useAuth must be used within an AuthProvider')
-  return context
 }

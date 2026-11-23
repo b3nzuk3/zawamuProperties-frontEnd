@@ -74,7 +74,7 @@ export default function AdminViewingRequests() {
 
   const updateRequestStatus = async (
     id: string,
-    status: string,
+    status: ViewingRequest['status'],
     notes?: string
   ) => {
     try {
@@ -82,7 +82,7 @@ export default function AdminViewingRequests() {
       setViewingRequests((prev) =>
         prev.map((req) =>
           req._id === id
-            ? { ...req, status: status as any, notes: notes || req.notes }
+            ? { ...req, status, notes: notes || req.notes }
             : req
         )
       )

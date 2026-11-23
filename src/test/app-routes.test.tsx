@@ -2,9 +2,10 @@
 import { render, screen } from '@testing-library/react'
 import { it, expect, vi } from 'vitest'
 import App from '@/App'
-import { useAuth } from '@/hooks/useAuth'
+import { useAuth } from '@/hooks/useAuthContext'
+vi.mock('@/hooks/useAuthContext', () => ({ useAuth: vi.fn() }))
 vi.mock('@/hooks/useAuth', () => ({
- useAuth: vi.fn(), AuthProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+ AuthProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }))
 vi.mock('@/pages/Index', () => ({ default: () => <div>public home</div> }))
 vi.mock('@/pages/Listings', () => ({ default: () => <div>public listings</div> }))

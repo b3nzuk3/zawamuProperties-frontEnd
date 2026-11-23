@@ -7,13 +7,9 @@ export default defineConfig({
   resolve: { alias: { '@': path.resolve(__dirname, './src') } },
   test: {
     pool: 'forks',
-    poolOptions: {
-      forks: {
-        // Node 25+ global Web Storage shadows jsdom's implementation.
-        execArgv: process.allowedNodeEnvironmentFlags.has('--no-experimental-webstorage')
-          ? ['--no-experimental-webstorage'] : [],
-      },
-    },
+    // Node 25+ global Web Storage shadows jsdom's implementation.
+    execArgv: process.allowedNodeEnvironmentFlags.has('--no-experimental-webstorage')
+      ? ['--no-experimental-webstorage'] : [],
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     clearMocks: true,

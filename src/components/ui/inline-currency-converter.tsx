@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Button } from './button'
 import { Input } from './input'
 import {
@@ -84,7 +84,7 @@ export function InlineCurrencyConverter({
   }, [])
 
   // Convert currency
-  const convertCurrency = () => {
+  const convertCurrency = useCallback(() => {
     if (!amount || !rates[fromCurrency] || !rates[toCurrency]) return
 
     const amountNum = parseFloat(amount)
@@ -107,11 +107,11 @@ export function InlineCurrencyConverter({
         maximumFractionDigits: 2,
       })
     )
-  }
+  }, [amount, fromCurrency, toCurrency, rates])
 
   useEffect(() => {
     convertCurrency()
-  }, [amount, fromCurrency, toCurrency, rates])
+  }, [convertCurrency])
 
   // Get currency info
   const getCurrencyInfo = (code: string) => {

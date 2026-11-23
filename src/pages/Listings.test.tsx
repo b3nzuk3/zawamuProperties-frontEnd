@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import api from '@/lib/api'
+import { savedSearchApi } from '@/lib/savedSearchApi'
 import Listings from './Listings'
 
 vi.mock('@/lib/api', () => ({
@@ -49,8 +50,10 @@ const renderListings = (initialEntry = '/listings') => render(
 
 beforeEach(() => {
   vi.clearAllMocks()
+  window.sessionStorage.clear()
   vi.mocked(api.get).mockResolvedValue({ data: [] } as never)
   vi.mocked(api.post).mockResolvedValue({ data: { success: true } } as never)
+  vi.spyOn(savedSearchApi, 'post').mockResolvedValue({ status: 202, data: { success: true, message: 'Request accepted.' } } as never)
 })
 
 describe('public listings filters and actions', () => {
@@ -205,11 +208,12 @@ describe('public listings filters and actions', () => {
     await user.type(within(dialog).getByLabelText('Email Address *'), 'visitor@example.test')
     await user.click(within(dialog).getByRole('button', { name: 'Save Search' }))
 
-    await waitFor(() => expect(api.post).toHaveBeenCalledWith('/saved-searches', expect.objectContaining({
+    await waitFor(() => expect(savedSearchApi.post).toHaveBeenCalledWith('/saved-searches', expect.objectContaining({
       searchCriteria: {
         ...criteria,
       },
-    })))
+    }), undefined))
+    expect(await screen.findByRole('button', { name: 'Request verification email' })).toBeInTheDocument()
   })
 
   it('replays saved criteria, including legacy structured fields and all bedroom/bathroom/search constraints', async () => {
@@ -303,9 +307,9 @@ describe('public listings filters and actions', () => {
     await user.type(within(dialog).getByLabelText('Email Address *'), 'visitor@example.test')
     await user.click(within(dialog).getByRole('button', { name: 'Save Search' }))
 
-    await waitFor(() => expect(api.post).toHaveBeenCalledWith('/saved-searches', expect.objectContaining({
+    await waitFor(() => expect(savedSearchApi.post).toHaveBeenCalledWith('/saved-searches', expect.objectContaining({
       searchCriteria: criteria,
-    })))
+    }), undefined))
   })
 
   it('keeps legacy id and image fallbacks in the public card', async () => {

@@ -5,8 +5,20 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import api from '@/lib/api'
 
+interface BlogPost {
+  _id?: string
+  id?: string
+  title: string
+  slug?: string
+  image?: string
+  summary?: string
+  readTime?: string
+  author?: string
+  publishedAt: string
+}
+
 export default function LatestBlog() {
-  const [blogPosts, setBlogPosts] = useState<any[]>([])
+  const [blogPosts, setBlogPosts] = useState<BlogPost[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -17,15 +29,16 @@ export default function LatestBlog() {
       try {
         const res = await api.get('/blog')
         // Sort by publishedAt descending and take the latest 3
-        const sorted = res.data
+        const posts: BlogPost[] = Array.isArray(res.data) ? res.data as BlogPost[] : []
+        const sorted = [...posts]
           .sort(
-            (a: any, b: any) =>
+            (a, b) =>
               new Date(b.publishedAt).getTime() -
               new Date(a.publishedAt).getTime()
           )
           .slice(0, 3)
         setBlogPosts(sorted)
-      } catch (err: any) {
+      } catch {
         setError('Failed to load blog posts.')
       } finally {
         setLoading(false)
