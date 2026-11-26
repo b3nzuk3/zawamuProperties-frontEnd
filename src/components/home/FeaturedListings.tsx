@@ -9,6 +9,7 @@ import { PropertyBadges, PropertyFeaturedBadge } from '@/components/properties/P
 import { PropertyPrice } from '@/components/properties/PropertyPrice'
 import { PropertyCardActions } from '@/components/properties/PropertyCardActions'
 import { getPropertyLocation } from '@/lib/property'
+import { getImageUrl } from '@/lib/media'
 import type { Property } from '@/types/property'
 
 type FeaturedProperty = Property & { id?: string; image?: string }
@@ -64,9 +65,7 @@ export default function FeaturedListings() {
               >
                 <div className="relative overflow-hidden">
                   <img
-                    src={
-                      property.images?.[0] || property.image || '/placeholder.jpg'
-                    }
+                    src={getImageUrl(property.images?.[0] || property.image || '/placeholder.jpg', 'card')}
                     alt={property.title}
                     className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-500"
                   />

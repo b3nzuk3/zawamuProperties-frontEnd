@@ -4,6 +4,7 @@ import { Calendar, User, ArrowRight, Clock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import api from '@/lib/api'
+import { getImageUrl } from '@/lib/media'
 
 interface BlogPost {
   _id?: string
@@ -88,10 +89,11 @@ export default function LatestBlog() {
               >
                 <div className="relative">
                   <img
-                    src={
+                    src={getImageUrl(
                       post.image ||
-                      'https://via.placeholder.com/800x400?text=No+Image'
-                    }
+                      'https://via.placeholder.com/800x400?text=No+Image',
+                      'card',
+                    )}
                     alt={post.title}
                     className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-500"
                   />

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { ArrowLeft, Calendar, User, Clock } from 'lucide-react'
 import api from '@/lib/api'
+import { getImageUrl } from '@/lib/media'
 
 type Blog = {
   _id?: string
@@ -111,7 +112,7 @@ export default function BlogPost() {
 
           {post.image && (
             <img
-              src={post.image}
+              src={getImageUrl(post.image, 'large')}
               alt={post.title}
               className="w-full h-80 object-cover rounded-xl mb-6"
             />

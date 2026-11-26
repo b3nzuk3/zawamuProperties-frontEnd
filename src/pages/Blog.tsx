@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { Link } from 'react-router-dom'
 import api from '@/lib/api'
+import { getImageUrl } from '@/lib/media'
 
 export default function Blog() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -106,7 +107,7 @@ export default function Blog() {
               <div className="grid grid-cols-1 lg:grid-cols-2">
                 <div className="relative h-64 lg:h-auto">
                   <img
-                    src={featuredPost.image || '/placeholder.jpg'}
+                    src={getImageUrl(featuredPost.image || '/placeholder.jpg', 'card')}
                     alt={featuredPost.title}
                     className="w-full h-full object-cover"
                   />
@@ -167,7 +168,7 @@ export default function Blog() {
               >
                 <div className="relative">
                   <img
-                    src={post.image || '/placeholder.jpg'}
+                    src={getImageUrl(post.image || '/placeholder.jpg', 'card')}
                     alt={post.title}
                     className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-500"
                   />

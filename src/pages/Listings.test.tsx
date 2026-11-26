@@ -2,7 +2,7 @@
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import api from '@/lib/api'
 import { savedSearchApi } from '@/lib/savedSearchApi'
 import Listings from './Listings'
@@ -56,7 +56,23 @@ beforeEach(() => {
   vi.spyOn(savedSearchApi, 'post').mockResolvedValue({ status: 202, data: { success: true, message: 'Request accepted.' } } as never)
 })
 
+afterEach(() => vi.unstubAllEnvs())
+
 describe('public listings filters and actions', () => {
+  it('uses the card WebP for owned listing images', async () => {
+    const uuid = 'f47ac10b-58cc-4372-a567-0e02b2c3d479'
+    vi.stubEnv('VITE_MEDIA_PUBLIC_URL', 'https://media.zawamu.test/assets/')
+    vi.mocked(api.get).mockResolvedValue({
+      data: [property({ images: [`https://media.zawamu.test/assets/images/v1/${uuid}/large.webp`] })],
+    } as never)
+    renderListings()
+
+    expect(await screen.findByRole('img', { name: 'Nairobi Apartment' })).toHaveAttribute(
+      'src',
+      `https://media.zawamu.test/assets/images/v1/${uuid}/card.webp`,
+    )
+  })
+
   it('filters by purpose independently of property type and treats legacy purpose as sale', async () => {
     const user = userEvent.setup()
     vi.mocked(api.get).mockResolvedValue({

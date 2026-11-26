@@ -1,8 +1,12 @@
 # Welcome to your Zawamu Properties project
 
-## Current launch-readiness follow-up
+## R2 / WebP media checkpoint
 
-Saved-search management now requires an email-verified guest session, separate from admin login. See `docs/launch-readiness.md` and `DEPLOYMENT_CHECKLIST.md` for current contracts, evidence and push/deployment boundaries; older Phase A–F sections below describe those historical checkpoints. Use Node 22.12+ and npm with the committed lockfile. Follow-up verification is in progress, not launch approval.
+New owner uploads use backend-optimized WebP variants stored in R2, not Cloudinary. Set build-time `VITE_MEDIA_PUBLIC_URL` to backend `R2_PUBLIC_URL` for size-appropriate thumbnail/card/detail delivery. See [`docs/r2-images.md`](docs/r2-images.md) for the string-URL contract, limits, legacy-asset retirement and separately approved provider/release gates. Existing image URLs remain unchanged; removing code is not transfer/deletion of hosted assets.
+
+## Historical launch-readiness checkpoint
+
+Saved-search management requires an email-verified guest session, separate from admin login. See `docs/launch-readiness.md` for the preceding checkpoint's contract/evidence and `DEPLOYMENT_CHECKLIST.md` for deployment boundaries including R2. Older Phase A–F sections are historical; the R2 media checkpoint above is current. Use Node 22.12+ and npm with the committed lockfile. Local verification is not launch approval.
 
 ## Project info
 

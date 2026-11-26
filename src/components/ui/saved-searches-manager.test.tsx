@@ -1,6 +1,6 @@
 // The saved-search transport below is mocked; these are UI/API-contract fixtures, not a live server.
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { SavedSearchesManager } from './saved-searches-manager'
 import { savedSearchApi } from '@/lib/savedSearchApi'
 
@@ -104,6 +104,8 @@ beforeEach(() => {
   vi.mocked(savedSearchApi.put).mockResolvedValue({ status: 200, data: { success: true } } as never)
 })
 
+afterEach(() => vi.unstubAllEnvs())
+
 describe('SavedSearchesManager', () => {
   it('loads only through the verified session and replays unchanged criteria', async () => {
     render(<SavedSearchesManager session={session} onSessionInvalid={onSessionInvalid} />)
@@ -154,7 +156,11 @@ describe('SavedSearchesManager', () => {
       ...matchingProperty,
       _id: `property-${index + 1}`,
       title: `Garden apartment ${index + 1}`,
+      images: index === 0
+        ? ['https://media.zawamu.test/assets/images/v1/f47ac10b-58cc-4372-a567-0e02b2c3d479/large.webp']
+        : [],
     }))
+    vi.stubEnv('VITE_MEDIA_PUBLIC_URL', 'https://media.zawamu.test/assets')
     vi.mocked(savedSearchApi.get).mockImplementation(async (path) => {
       if (path === '/saved-searches?page=1&limit=20') return { data: { success: true, data: [savedSearch] } } as never
       if (path === '/saved-searches/search-1/properties') {
@@ -168,6 +174,10 @@ describe('SavedSearchesManager', () => {
 
     await within(card).findByText('Garden apartment 10')
     expect(within(card).getAllByTestId('matched-property-card')).toHaveLength(10)
+    expect(within(card).getByRole('img', { name: 'Garden apartment 1' })).toHaveAttribute(
+      'src',
+      'https://media.zawamu.test/assets/images/v1/f47ac10b-58cc-4372-a567-0e02b2c3d479/card.webp',
+    )
     expect(within(card).queryByText('Garden apartment 11')).not.toBeInTheDocument()
     expect(within(card).getByText('Showing the first 10 of 11 matching properties.')).toBeInTheDocument()
     expect(savedSearchApi.get).toHaveBeenCalledWith('/saved-searches/search-1/properties', {

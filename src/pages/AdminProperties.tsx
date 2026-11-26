@@ -11,6 +11,7 @@ import {
   propertyToForm,
   validatePropertyForm,
 } from '@/lib/property'
+import { getImageUrl } from '@/lib/media'
 
 type PropertyApiError = {
   response?: {
@@ -254,11 +255,12 @@ export default function AdminProperties() {
                     <tr key={property._id} className="border-b hover:bg-secondary/40 transition-colors">
                       <td className="p-3">
                         <img
-                          src={
+                          src={getImageUrl(
                             property.images && property.images.length > 0
                               ? property.images[0]
-                              : '/placeholder.jpg'
-                          }
+                              : '/placeholder.jpg',
+                            'thumbnail',
+                          )}
                           alt={property.title}
                           className="w-16 h-16 object-cover rounded-md border"
                         />
@@ -358,7 +360,7 @@ export default function AdminProperties() {
                           {existingImages.map((img, idx) => (
                             <div key={idx} className="relative group">
                               <img
-                                src={img}
+                                src={getImageUrl(img, 'thumbnail')}
                                 alt={`Property ${idx + 1}`}
                                 className="w-24 h-24 object-cover rounded-md border"
                               />

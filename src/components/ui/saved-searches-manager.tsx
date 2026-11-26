@@ -28,6 +28,7 @@ import type { SavedSearchSession } from '../../lib/savedSearchApi'
 import { PropertyBadges } from '../properties/PropertyBadges'
 import { PropertyPrice } from '../properties/PropertyPrice'
 import { getPropertyLocation } from '../../lib/property'
+import { getImageUrl } from '../../lib/media'
 import {
   summarizeSavedSearchCriteria,
   validateSavedSearchCriteria,
@@ -102,6 +103,13 @@ function MatchingPropertyPreview({ property }: { property: Partial<Property> }) 
   return (
     <article className="rounded-lg border border-border bg-card p-4" data-testid="matched-property-card">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        {property.images?.[0] && (
+          <img
+            src={getImageUrl(property.images[0], 'card')}
+            alt={property.title || 'Matched property'}
+            className="h-28 w-full rounded-md object-cover sm:h-24 sm:w-32 sm:shrink-0"
+          />
+        )}
         <div className="min-w-0 space-y-2">
           {property.title && (
             property._id

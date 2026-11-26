@@ -12,6 +12,7 @@ import { PropertyBadges } from '@/components/properties/PropertyBadges'
 import { WhatsAppButton } from '@/components/properties/WhatsAppButton'
 import EnquiryForm from '@/components/contact/EnquiryForm'
 import { getPropertyLocation, isPropertyAvailable } from '@/lib/property'
+import { getImageUrl } from '@/lib/media'
 import type { Property } from '@/types/property'
 
 export default function PropertyDetails() {
@@ -84,17 +85,23 @@ export default function PropertyDetails() {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-4">
-              <img
-                src={mainImage}
-                alt={property.title}
-                className="w-full h-96 object-cover rounded-xl"
-              />
+              <picture>
+                <source
+                  media="(max-width: 767px)"
+                  srcSet={getImageUrl(mainImage, 'card')}
+                />
+                <img
+                  src={getImageUrl(mainImage, 'large')}
+                  alt={property.title}
+                  className="w-full h-96 object-cover rounded-xl"
+                />
+              </picture>
               {property.images && property.images.length > 1 && (
                 <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
                   {property.images.slice(1, 7).map((img, idx) => (
                     <img
                       key={idx}
-                      src={img}
+                      src={getImageUrl(img, 'thumbnail')}
                       alt={`${property.title} ${idx + 2}`}
                       className="h-24 w-full object-cover rounded-lg"
                     />

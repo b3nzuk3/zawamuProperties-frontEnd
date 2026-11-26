@@ -2,7 +2,7 @@
 import { render, screen, within, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import api from '@/lib/api'
 import PropertyDetails from './PropertyDetails'
 
@@ -77,7 +77,37 @@ beforeEach(() => {
   vi.clearAllMocks()
 })
 
+afterEach(() => vi.unstubAllEnvs())
+
 describe('PropertyDetails public presentation', () => {
+  it('uses large for the detail image, card on narrow screens, and thumbnails for the gallery', async () => {
+    const uuid = 'f47ac10b-58cc-4372-a567-0e02b2c3d479'
+    const secondUuid = 'a47ac10b-58cc-4372-a567-0e02b2c3d470'
+    vi.stubEnv('VITE_MEDIA_PUBLIC_URL', 'https://media.zawamu.test/assets')
+    vi.mocked(api.get).mockResolvedValue({ data: {
+      ...property,
+      images: [
+        `https://media.zawamu.test/assets/images/v1/${uuid}/large.webp`,
+        `https://media.zawamu.test/assets/images/v1/${secondUuid}/large.webp`,
+      ],
+    } } as never)
+    renderDetails()
+
+    const mainImage = await screen.findByRole('img', { name: property.title })
+    expect(mainImage).toHaveAttribute('src', `https://media.zawamu.test/assets/images/v1/${uuid}/large.webp`)
+    const picture = mainImage.closest('picture')
+    expect(picture?.querySelector('source')).toHaveAttribute(
+      'srcset',
+      `https://media.zawamu.test/assets/images/v1/${uuid}/card.webp`,
+    )
+    expect(picture?.querySelector('source')).toHaveAttribute('media', '(max-width: 767px)')
+    expect(picture?.querySelector('source')?.getAttribute('srcset')).not.toMatch(/\s+\d+w$/)
+    expect(screen.getByRole('img', { name: `${property.title} 2` })).toHaveAttribute(
+      'src',
+      `https://media.zawamu.test/assets/images/v1/${secondUuid}/thumbnail.webp`,
+    )
+  })
+
   it('uses manual location, shared price/badges, and keeps viewing available', async () => {
     vi.mocked(api.get).mockResolvedValue({ data: property } as never)
     renderDetails()

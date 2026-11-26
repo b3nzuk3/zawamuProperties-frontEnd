@@ -1,7 +1,7 @@
 // API responses are explicit fixtures; these tests do not contact a server.
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import api from '@/lib/api'
 import FeaturedListings from './FeaturedListings'
 
@@ -50,7 +50,23 @@ beforeEach(() => {
   vi.mocked(api.get).mockResolvedValue({ data: [] } as never)
 })
 
+afterEach(() => vi.unstubAllEnvs())
+
 describe('featured public listings', () => {
+  it('uses the card WebP for owned featured images', async () => {
+    const uuid = 'f47ac10b-58cc-4372-a567-0e02b2c3d479'
+    vi.stubEnv('VITE_MEDIA_PUBLIC_URL', 'https://media.zawamu.test/assets')
+    vi.mocked(api.get).mockResolvedValue({
+      data: [property({ images: [`https://media.zawamu.test/assets/images/v1/${uuid}/large.webp`] })],
+    } as never)
+    renderFeatured()
+
+    expect(await screen.findByRole('img', { name: 'Featured Nairobi Apartment' })).toHaveAttribute(
+      'src',
+      `https://media.zawamu.test/assets/images/v1/${uuid}/card.webp`,
+    )
+  })
+
   it('keeps only featured listings and integrates prices, availability badges, and contact actions', async () => {
     vi.mocked(api.get).mockResolvedValue({
       data: [

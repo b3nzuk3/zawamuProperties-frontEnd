@@ -4,6 +4,9 @@ This is an operator checklist, **not push/deployment approval**. Phases A–F ar
 
 ## Blocking launch gates
 
+- [ ] Configure backend-only `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME` and public HTTPS `R2_PUBLIC_URL`; rebuild frontend with matching `VITE_MEDIA_PUBLIC_URL`. Install native Sharp optional packages on the deployment platform. No Cloudinary credentials are required by the new application.
+- [ ] Separately authorize a real R2 canary PUT/public read-back of all three WebP sizes, MIME/cache headers and approved-key compensation. Local S3 fixtures are not provider proof. Use a custom production media domain, not r2.dev or the authenticated S3 API endpoint. See `docs/r2-images.md` and its source-bound evidence.
+- [ ] Before cancelling/deleting Cloudinary assets/account, separately inventory and transfer or replace every retained old URL, verify API/rendered-image references, and retain rollback evidence. Integration removal alone does not eliminate old hosted-asset dependencies; no migration/backfill operation is authorized here.
 - [ ] Configure `CONTACT_NOTIFICATION_EMAIL` as the approved `zawamuproperty@gmail.com`; the template is not host configuration.
 - [ ] Configure backend `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_FROM`, and paired `SMTP_USER`/`SMTP_PASSWORD` when authentication is needed. Use an approved staging recipient for a separately authorized real-delivery rehearsal; mocked transport acceptance does not prove delivery.
 - [ ] Allowlist the existing approved owner `zawamuproperty@gmail.com` in backend-only `ADMIN_EMAILS`; an empty value intentionally denies all owner access. Preserve its password and disabled registration. No default account/password is created here.

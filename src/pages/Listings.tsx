@@ -31,6 +31,7 @@ import {
   getPropertyLocation,
   SALE_PROPERTY_TYPES,
 } from '@/lib/property'
+import { getImageUrl } from '@/lib/media'
 import {
   matchesSavedSearchCriteria,
   parseSavedSearchCriteria,
@@ -479,7 +480,7 @@ export default function Listings() {
                 >
                   <div className="relative overflow-hidden">
                     <img
-                      src={property.images?.[0] || property.image || '/placeholder.jpg'}
+                      src={getImageUrl(property.images?.[0] || property.image || '/placeholder.jpg', 'card')}
                       alt={property.title}
                       className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-500"
                     />

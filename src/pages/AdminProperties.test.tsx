@@ -1,7 +1,7 @@
 // API responses here are explicit mocks; these tests do not contact a server.
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import api from '@/lib/api'
 import AdminProperties from './AdminProperties'
 
@@ -56,7 +56,39 @@ beforeEach(() => {
   vi.mocked(api.put).mockResolvedValue({ data: legacyProperty } as never)
 })
 
+afterEach(() => vi.unstubAllEnvs())
+
 describe('AdminProperties owner editing', () => {
+  it('uses thumbnail WebPs for admin table and existing-image previews', async () => {
+    const uuid = 'f47ac10b-58cc-4372-a567-0e02b2c3d479'
+    const secondUuid = 'a47ac10b-58cc-4372-a567-0e02b2c3d470'
+    vi.stubEnv('VITE_MEDIA_PUBLIC_URL', 'https://media.zawamu.test/assets/')
+    vi.mocked(api.get).mockImplementation((url) => Promise.resolve({
+      data: url === '/properties' ? [{
+        ...legacyProperty,
+        images: [
+          `https://media.zawamu.test/assets/images/v1/${uuid}/large.webp`,
+          `https://media.zawamu.test/assets/images/v1/${secondUuid}/large.webp`,
+        ],
+      }] : featureCatalog,
+    }) as never)
+    render(<AdminProperties />)
+
+    expect(await screen.findByRole('img', { name: legacyProperty.title })).toHaveAttribute(
+      'src',
+      `https://media.zawamu.test/assets/images/v1/${uuid}/thumbnail.webp`,
+    )
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Edit' }))
+    expect(screen.getByAltText('Property 1')).toHaveAttribute(
+      'src',
+      `https://media.zawamu.test/assets/images/v1/${uuid}/thumbnail.webp`,
+    )
+    expect(screen.getByAltText('Property 2')).toHaveAttribute(
+      'src',
+      `https://media.zawamu.test/assets/images/v1/${secondUuid}/thumbnail.webp`,
+    )
+  })
+
   it.each([null, '', 'withdrawn'])('requires an explicit availability correction for historical %s before unrelated edits save', async (availability) => {
     const user = userEvent.setup()
     vi.mocked(api.get).mockImplementation((url) => Promise.resolve({
@@ -233,6 +265,7 @@ describe('AdminProperties owner editing', () => {
     const input = screen.getByLabelText('Images')
     await user.upload(input, new File(['fixture'], 'new-locked.jpg', { type: 'image/jpeg' }))
     const preview = await screen.findByAltText('Preview')
+    expect(preview).toHaveAttribute('src', expect.stringMatching(/^data:image\/jpeg;base64,/))
     const existing = screen.getByAltText('Property 1')
     const removeNew = preview.parentElement!.querySelector('button')!
     const removeExisting = existing.parentElement!.querySelector('button')!
