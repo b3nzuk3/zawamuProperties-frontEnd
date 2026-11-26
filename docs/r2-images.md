@@ -4,6 +4,8 @@ New owner uploads are processed by the backend into WebP thumbnail/card/large va
 
 ## Public build configuration and paths
 
+The subsequent HEIC upload checkpoint accepts JPEG, PNG, WebP, AVIF and HEVC HEIC/HEIF phone photos in owner property create/edit and blog creation. Explicit picker formats and filename placeholders avoid broken HEIC previews in browsers without a decoder. Files are submitted unchanged and converted by the backend into the same WebP variants; original HEIC files are not stored. Limits remain 8 MiB / 24 million pixels per image. See sibling backend `docs/heic-uploads.md` and the new `docs/heic-uploads-evidence.json`; historical R2 evidence below predates this follow-up. Release the compatible backend first; no deployment is authorized here.
+
 Set `VITE_MEDIA_PUBLIC_URL=https://media.<your-domain>` at build time, matching backend `R2_PUBLIC_URL` (a trailing slash is normalized). A prefix such as `/assets` may be used on both sides. That prefix is stored in each R2 object key and stays in the public URL path: `/assets/images/v1/...` must directly resolve to the `assets/images/v1/...` object key; do not depend on a CDN/path-stripping rewrite. This is a public HTTPS delivery domain, **not the authenticated R2 S3 API endpoint**. No R2 credentials belong in the frontend.
 
 The upload endpoint still returns `{ urls: string[] }`, with a canonical large image URL per input in order:

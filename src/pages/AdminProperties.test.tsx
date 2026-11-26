@@ -44,6 +44,18 @@ const writableFields = new Set([
   'coordinates', 'type', 'listingPurpose', 'availability', 'offerPercent',
   'featured', 'images', 'features', 'bedrooms', 'bathrooms', 'area',
 ])
+const expectedImageAccept = 'image/jpeg,image/png,image/webp,image/avif,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.avif,.heic,.heif'
+
+function expectOriginalImageUpload(file: File) {
+  const uploadCall = vi.mocked(api.post).mock.calls.find(([url]) => url === '/upload')
+  expect(uploadCall).toBeDefined()
+  const formData = uploadCall?.[1]
+  expect(formData).toBeInstanceOf(FormData)
+  const uploadedFiles = (formData as FormData).getAll('images')
+  expect(uploadedFiles).toHaveLength(1)
+  expect(uploadedFiles[0]).toBe(file)
+  expect(uploadedFiles[0]).toMatchObject({ name: file.name, type: file.type, size: file.size })
+}
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -287,5 +299,29 @@ describe('AdminProperties owner editing', () => {
     expect(input).toBeEnabled()
     expect(removeNew).toBeEnabled()
     expect(removeExisting).toBeEnabled()
+  })
+
+  it('shows the HEIC placeholder and uploads the original HEIC file in edit FormData', async () => {
+    const user = userEvent.setup()
+    const file = new File(['original heic bytes'], 'owner-photo.heic', { type: 'image/heic' })
+    vi.mocked(api.post).mockResolvedValueOnce({ data: { urls: ['uploaded-owner-photo.webp'] } } as never)
+    render(<AdminProperties />)
+    await user.click(await screen.findByRole('button', { name: 'Edit' }))
+
+    const input = screen.getByLabelText('Images')
+    expect(input).toHaveAttribute('accept', expectedImageAccept)
+    expect(screen.getByText(/max 8 MiB and 24 MP per image/i)).toBeInTheDocument()
+    await user.upload(input, file)
+
+    expect(await screen.findByRole('img', { name: 'Selected file: owner-photo.heic' })).toBeInTheDocument()
+    expect(screen.getByText('HEIC/HEIF preview unavailable')).toBeInTheDocument()
+    expect(screen.queryByAltText('Preview')).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Save Changes' }))
+
+    await waitFor(() => expect(api.put).toHaveBeenCalledTimes(1))
+    expectOriginalImageUpload(file)
+    expect(api.put).toHaveBeenCalledWith('/properties/property-1', expect.objectContaining({
+      images: [...legacyProperty.images, 'uploaded-owner-photo.webp'],
+    }))
   })
 })

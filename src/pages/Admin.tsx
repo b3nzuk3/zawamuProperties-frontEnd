@@ -18,9 +18,11 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { PropertyFields } from '@/components/properties/PropertyFields'
+import ImageFilePreview from '@/components/media/ImageFilePreview'
 import api from '@/lib/api'
 import type { PropertyFormValues } from '@/types/property'
 import { buildPropertyPayload, createPropertyForm, validatePropertyForm } from '@/lib/property'
+import { IMAGE_UPLOAD_HELPER_TEXT, OWNER_IMAGE_ACCEPT } from '@/lib/image-upload'
 import MdEditor from 'react-markdown-editor-lite'
 import MarkdownIt from 'markdown-it'
 import 'react-markdown-editor-lite/lib/index.css'
@@ -38,7 +40,6 @@ interface BlogPostForm {
   category: string
   readTime: string
   image: File | null
-  imagePreview: string
   content: string
   author: string
   date: string
@@ -83,7 +84,6 @@ export default function Admin() {
   const [dashError, setDashError] = useState<string | null>(null)
   const [form, setForm] = useState<PropertyFormValues>(createPropertyForm)
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
-  const [previews, setPreviews] = useState<string[]>([])
   const [uploading, setUploading] = useState(false)
   const [featureSaving, setFeatureSaving] = useState(false)
   const featureSavingRef = useRef(false)
@@ -95,7 +95,6 @@ export default function Admin() {
     category: '',
     readTime: '',
     image: null,
-    imagePreview: '',
     content: '',
     author: '',
     date: '',
@@ -158,22 +157,12 @@ export default function Admin() {
         10 - selectedFiles.length
       ) as File[]
       setSelectedFiles((prev) => [...prev, ...files])
-
-      // Create previews for selected files
-      files.forEach((file) => {
-        const reader = new FileReader()
-        reader.onloadend = () => {
-          setPreviews((prev) => [...prev, reader.result as string])
-        }
-        reader.readAsDataURL(file)
-      })
     }
   }
 
   const removeSelectedImage = (index: number) => {
     if (uploading || featureSavingRef.current) return
     setSelectedFiles((prev) => prev.filter((_, i) => i !== index))
-    setPreviews((prev) => prev.filter((_, i) => i !== index))
   }
 
   const handleFeatureBusyChange = (busy: boolean) => {
@@ -217,7 +206,6 @@ export default function Admin() {
       setShowAddModal(false)
       setForm(createPropertyForm())
       setSelectedFiles([])
-      setPreviews([])
       await loadDashboard()
     } catch (err: unknown) {
       setError(getPropertySaveError(err, 'Failed to add property'))
@@ -249,7 +237,6 @@ export default function Admin() {
       setPostForm((f) => ({
         ...f,
         image: file,
-        imagePreview: file ? URL.createObjectURL(file) : '',
       }))
     } else if (name === 'featured') {
       setPostForm((f) => ({ ...f, featured: checked }))
@@ -294,7 +281,6 @@ export default function Admin() {
         category: '',
         readTime: '',
         image: null,
-        imagePreview: '',
         content: '',
         author: '',
         date: '',
@@ -382,24 +368,24 @@ export default function Admin() {
                       <input
                         id="add-property-images"
                         type="file"
-                        accept="image/*"
+                        accept={OWNER_IMAGE_ACCEPT}
                         multiple
                         onChange={handleImageChange}
                         disabled={uploading || featureSaving || selectedFiles.length >= 10}
                       />
+                      <p className="mt-1 text-xs text-muted-foreground">{IMAGE_UPLOAD_HELPER_TEXT}</p>
 
                       {/* Selected files preview */}
-                      {previews.length > 0 && (
+                      {selectedFiles.length > 0 && (
                         <div className="mt-4">
                           <p className="text-sm font-medium mb-2">
                             Selected Images:
                           </p>
                           <div className="flex flex-wrap gap-2">
-                            {previews.map((preview, idx) => (
+                            {selectedFiles.map((file, idx) => (
                               <div key={idx} className="relative group">
-                                <img
-                                  src={preview}
-                                  alt="Preview"
+                                <ImageFilePreview
+                                  file={file}
                                   className="w-24 h-24 object-cover rounded-md border"
                                 />
                                 <button
@@ -456,10 +442,11 @@ export default function Admin() {
                 )}
                 <form className="space-y-5" onSubmit={handleAddPost}>
                   <div>
-                    <label className="block text-sm font-medium mb-1">
+                    <label htmlFor="post-title" className="block text-sm font-medium mb-1">
                       Title
                     </label>
                     <input
+                      id="post-title"
                       name="title"
                       value={postForm.title}
                       onChange={handlePostInput}
@@ -509,20 +496,21 @@ export default function Admin() {
                     </label>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">
+                    <label htmlFor="post-image" className="block text-sm font-medium mb-1">
                       Image
                     </label>
                     <input
+                      id="post-image"
                       name="image"
                       type="file"
-                      accept="image/*"
+                      accept={OWNER_IMAGE_ACCEPT}
                       onChange={handlePostInput}
                       className="border rounded px-3 py-2 w-full"
                     />
-                    {postForm.imagePreview && (
-                      <img
-                        src={postForm.imagePreview}
-                        alt="Preview"
+                    <p className="mt-1 text-xs text-muted-foreground">{IMAGE_UPLOAD_HELPER_TEXT}</p>
+                    {postForm.image && (
+                      <ImageFilePreview
+                        file={postForm.image}
                         className="mt-2 w-32 h-20 object-cover rounded"
                       />
                     )}

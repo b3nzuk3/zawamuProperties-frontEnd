@@ -4,6 +4,8 @@ This is an operator checklist, **not push/deployment approval**. Phases A–F ar
 
 ## Blocking launch gates
 
+- [ ] For HEIC/HEIF uploads, release the compatible backend with lockfile-pinned `libheif-js` WASM worker before the frontend. Validate an approved single-image HEVC photo through all three public WebP variants on the target host; local codec/transport/browser fixtures do not prove the deployed runtime. Preserve dependency license notices and enforce host memory limits (V8 worker heap limits exclude WASM/native buffers). See backend `docs/heic-uploads.md` and scoped HEIC evidence in both repositories.
+
 - [ ] Configure backend-only `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME` and public HTTPS `R2_PUBLIC_URL`; rebuild frontend with matching `VITE_MEDIA_PUBLIC_URL`. Install native Sharp optional packages on the deployment platform. No Cloudinary credentials are required by the new application.
 - [ ] Separately authorize a real R2 canary PUT/public read-back of all three WebP sizes, MIME/cache headers and approved-key compensation. Local S3 fixtures are not provider proof. Use a custom production media domain, not r2.dev or the authenticated S3 API endpoint. See `docs/r2-images.md` and its source-bound evidence.
 - [ ] Before cancelling/deleting Cloudinary assets/account, separately inventory and transfer or replace every retained old URL, verify API/rendered-image references, and retain rollback evidence. Integration removal alone does not eliminate old hosted-asset dependencies; no migration/backfill operation is authorized here.

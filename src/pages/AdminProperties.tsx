@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import Layout from '@/components/layout/Layout'
 import { Button } from '@/components/ui/button'
 import { PropertyFields } from '@/components/properties/PropertyFields'
+import ImageFilePreview from '@/components/media/ImageFilePreview'
 import api from '@/lib/api'
 import { X } from 'lucide-react'
 import type { Property, PropertyFormValues } from '@/types/property'
@@ -12,6 +13,7 @@ import {
   validatePropertyForm,
 } from '@/lib/property'
 import { getImageUrl } from '@/lib/media'
+import { IMAGE_UPLOAD_HELPER_TEXT, OWNER_IMAGE_ACCEPT } from '@/lib/image-upload'
 
 type PropertyApiError = {
   response?: {
@@ -51,7 +53,6 @@ export default function AdminProperties() {
   const [editorRevision, setEditorRevision] = useState(0)
   const [existingImages, setExistingImages] = useState<string[]>([])
   const [newImageFiles, setNewImageFiles] = useState<File[]>([])
-  const [newImagePreviews, setNewImagePreviews] = useState<string[]>([])
   const [uploadingImages, setUploadingImages] = useState(false)
 
   useEffect(() => {
@@ -100,7 +101,6 @@ export default function AdminProperties() {
     setEditModal(true)
     setEditError(null)
     setNewImageFiles([])
-    setNewImagePreviews([])
   }
 
   const reloadLatest = async () => {
@@ -114,7 +114,6 @@ export default function AdminProperties() {
       setEditForm(propertyToForm(latest))
       setExistingImages(latest.images || [])
       setNewImageFiles([])
-      setNewImagePreviews([])
       setEditorRevision((revision) => revision + 1)
       setProperties((current) => current.map((property) => property._id === id ? latest : property))
       setConflictedIds((current) => {
@@ -138,15 +137,6 @@ export default function AdminProperties() {
         10 - existingImages.length - newImageFiles.length
       ) as File[]
       setNewImageFiles((prev) => [...prev, ...files])
-
-      // Create previews for selected files
-      files.forEach((file) => {
-        const reader = new FileReader()
-        reader.onloadend = () => {
-          setNewImagePreviews((prev) => [...prev, reader.result as string])
-        }
-        reader.readAsDataURL(file)
-      })
     }
   }
 
@@ -158,7 +148,6 @@ export default function AdminProperties() {
   const removeNewImage = (index: number) => {
     if (editLoading || uploadingImages || featureSavingRef.current) return
     setNewImageFiles((prev) => prev.filter((_, i) => i !== index))
-    setNewImagePreviews((prev) => prev.filter((_, i) => i !== index))
   }
 
   const handleEditSave = async () => {
@@ -200,7 +189,6 @@ export default function AdminProperties() {
       setEditForm(null)
       setExistingImages([])
       setNewImageFiles([])
-      setNewImagePreviews([])
     } catch (err: unknown) {
       if ((err as PropertyApiError)?.response?.status === 409 && editProperty._id) {
         setConflictedIds((current) => new Set(current).add(editProperty._id))
@@ -382,7 +370,7 @@ export default function AdminProperties() {
                     <input
                       id="edit-property-images"
                       type="file"
-                      accept="image/*"
+                      accept={OWNER_IMAGE_ACCEPT}
                       multiple
                       onChange={handleImageSelect}
                       disabled={
@@ -390,18 +378,18 @@ export default function AdminProperties() {
                       }
                       className="mb-2"
                     />
+                    <p className="mt-1 text-xs text-muted-foreground">{IMAGE_UPLOAD_HELPER_TEXT}</p>
                     {/* New Image Previews */}
-                    {newImagePreviews.length > 0 && (
+                    {newImageFiles.length > 0 && (
                       <div className="mt-4">
                         <p className="text-sm text-muted-foreground mb-2">
                           New Images:
                         </p>
                         <div className="flex flex-wrap gap-2">
-                          {newImagePreviews.map((preview, idx) => (
+                          {newImageFiles.map((file, idx) => (
                             <div key={idx} className="relative group">
-                              <img
-                                src={preview}
-                                alt="Preview"
+                              <ImageFilePreview
+                                file={file}
                                 className="w-24 h-24 object-cover rounded-md border"
                               />
                               <button

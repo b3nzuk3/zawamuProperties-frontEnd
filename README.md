@@ -2,6 +2,8 @@
 
 ## R2 / WebP media checkpoint
 
+The subsequent local HEIC upload follow-up adds explicit HEIC/HEIF selection and selected-file placeholders to property create/edit and blog forms. The backend performs conversion; persisted image URLs remain canonical WebPs. See [media notes](docs/r2-images.md) and `docs/heic-uploads-evidence.json` for current verification; a compatible backend release is required before publishing this frontend.
+
 New owner uploads use backend-optimized WebP variants stored in R2, not Cloudinary. Set build-time `VITE_MEDIA_PUBLIC_URL` to backend `R2_PUBLIC_URL` for size-appropriate thumbnail/card/detail delivery. See [`docs/r2-images.md`](docs/r2-images.md) for the string-URL contract, limits, legacy-asset retirement and separately approved provider/release gates. Existing image URLs remain unchanged; removing code is not transfer/deletion of hosted assets.
 
 ## Historical launch-readiness checkpoint
